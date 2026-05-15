@@ -90,9 +90,12 @@ proyecto-psicoeducativo/
 │   │   ├── phq9_repository.py
 │   │   ├── gad7_repository.py
 │   │   ├── sesion_repository.py
-│   │   ├── alerta_repository.py
+│   │   ├── alerta_repository.py       ← Persiste AlertaRiesgo (no CRUD calificable)
 │   │   ├── email_service.py           ← EmailService (modo simulación por defecto)
-│   │   └── notificacion_decorator.py  ← Decorator GoF que envuelve IRepository
+│   │   ├── notificacion_decorator.py  ← Decorator GoF que envuelve IRepository
+│   │   ├── phq9_business_service.py   ← Regla del integrante 2
+│   │   ├── gad7_business_service.py   ← Regla del integrante 3
+│   │   └── sesion_business_service.py ← Regla del integrante 4
 │   │
 │   ├── exceptions/                    ← Excepciones personalizadas (criterio 4)
 │   │   ├── base.py                    ← PlataformaError
@@ -290,6 +293,8 @@ PlataformaError (base)
 
 ## 9. Reglas de negocio (una por integrante — criterio 5)
 
+Los `BusinessServices` viven en `src/services/` y reciben sus dependencias por **inyección en el constructor** (nunca las instancian internamente).
+
 ### Integrante 1 — Estudiante
 - **Regla**: No pueden existir dos estudiantes con el mismo código institucional.
 - **Dónde**: `EstudianteRepository.crear()` lanza `DuplicateEntityError`.
@@ -297,18 +302,29 @@ PlataformaError (base)
 
 ### Integrante 2 — CuestionarioPHQ9
 - **Regla**: Si `puntaje_total ≥ 20`, crear `AlertaRiesgo` de tipo `DEPRESION_SEVERA` y notificar por email.
-- **Dónde**: `PHQ9BusinessService.evaluar_riesgo()` en `src/services/`.
+- **Dónde**: `PHQ9BusinessService.evaluar_riesgo()`.
+- **Dependencias del `__init__`**: `AlertaRepository`, `EmailService`.
 - **BPMN**: gateway "¿Puntaje ≥ 20?" tras "Calcular puntaje PHQ-9".
 
 ### Integrante 3 — CuestionarioGAD7
 - **Regla**: Si `puntaje_total ≥ 15` Y el estudiante tiene un PHQ-9 con `puntaje ≥ 20` en los últimos 30 días → `AlertaRiesgo` de tipo `COMORBILIDAD`.
-- **Dónde**: `GAD7BusinessService.evaluar_riesgo()` en `src/services/`.
+- **Dónde**: `GAD7BusinessService.evaluar_riesgo()`.
+- **Dependencias del `__init__`**: `PHQ9Repository`, `AlertaRepository`, `EmailService`.
 - **BPMN**: dos gateways en secuencia.
 
 ### Integrante 4 — SesionSeguimiento
 - **Regla**: Solo agendar si: (1) estudiante tiene ≥ 1 cuestionario aplicado; (2) no hay otra sesión ese mismo día; (3) hora entre 08:00 y 18:00.
-- **Dónde**: `SesionBusinessService.puede_agendar()` en `src/services/`.
+- **Dónde**: `SesionBusinessService.puede_agendar()`.
+- **Dependencias del `__init__`**: `SesionRepository`, `PHQ9Repository`, `GAD7Repository`.
 - **BPMN**: tres gateways previos al "Agendar sesión".
+
+### Resumen de dependencias
+
+| BusinessService | Recibe en `__init__` |
+|---|---|
+| `PHQ9BusinessService` | `alerta_repo`, `email_service` |
+| `GAD7BusinessService` | `phq9_repo`, `alerta_repo`, `email_service` |
+| `SesionBusinessService` | `sesion_repo`, `phq9_repo`, `gad7_repo` |
 
 ---
 
@@ -332,6 +348,8 @@ controller = EstudianteController(repo=repo, email_service=email)
 ```
 
 **EmailService en modo simulación** (por defecto): imprime en consola en lugar de enviar SMTP real. Cambiar a `modo_simulacion=False` solo para demo con credenciales configuradas.
+
+**Qué repositorios se decoran**: solo los **4 repositorios CRUD** (Estudiante, PHQ9, GAD7, Sesion) que cubre el criterio 7. **NO** decorar `AlertaRepository` — los BusinessServices ya envían email manualmente al crear alertas, y decorarlo causaría emails duplicados.
 
 ---
 
