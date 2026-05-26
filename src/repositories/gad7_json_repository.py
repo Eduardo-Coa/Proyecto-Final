@@ -12,14 +12,15 @@ from src.models.cuestionario_gad7 import CuestionarioGAD7
 from src.repositories.interfaces import IRepository
 
 
-class GAD7Repository(IRepository[CuestionarioGAD7]):
+class GAD7JsonRepository(IRepository[CuestionarioGAD7]):
     """Repositorio JSON para cuestionarios GAD-7.
 
     Args:
-        ruta: ruta al archivo JSON de persistencia.
+        ruta: ruta al archivo JSON de persistencia (sin valor por defecto para
+            no acoplar la clase a una ubicación específica).
     """
 
-    def __init__(self, ruta: Path = Path("data/cuestionarios_gad7.json")) -> None:
+    def __init__(self, ruta: Path) -> None:
         self.ruta = ruta
 
     def crear(self, entidad: CuestionarioGAD7) -> CuestionarioGAD7:

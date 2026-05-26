@@ -4,7 +4,8 @@ import tkinter as tk
 from tkinter import ttk
 
 from src.controllers.gad7_controller import GAD7Controller
-from src.repositories.gad7_repository import GAD7Repository
+from src.repositories.db_config import obtener_conexion
+from src.repositories.gad7_mysql_repository import GAD7MySQLRepository
 from src.services.gad7_business_service import GAD7BusinessService
 from src.views.gad7_view import GAD7View
 
@@ -23,6 +24,7 @@ class AppController:
     """
 
     def __init__(self) -> None:
+        self._conexion_db = obtener_conexion()
         self._construir_servicios_compartidos()
         self._construir_repositorios()
         self._construir_business_services()
@@ -49,8 +51,9 @@ class AppController:
         # self._phq9_repo = PHQ9Repository()
         self._phq9_repo = _PHQ9RepoStub()  # temporal hasta que Eduardo agregue su repo
 
-        # Diunis — GAD7
-        self._gad7_repo = GAD7Repository()
+        # Diunis — GAD7 (MySQL)
+        # Para volver a JSON local: usar GAD7JsonRepository(Path("data/cuestionarios_gad7.json"))
+        self._gad7_repo = GAD7MySQLRepository(self._conexion_db)
 
         # TODO (Ceni): from src.repositories.sesion_repository import SesionRepository
         # self._sesion_repo = SesionRepository()
