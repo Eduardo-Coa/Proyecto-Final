@@ -6,7 +6,7 @@ from src.exceptions.business_errors import BusinessRuleError
 from src.exceptions.persistence_errors import EntityNotFoundError, PersistenceError
 from src.exceptions.validation_errors import ValidationError
 from src.models.cuestionario_gad7 import CuestionarioGAD7
-from src.services.interfaces import IRepository
+from src.repositories.interfaces import IRepository
 
 
 class GAD7Controller:

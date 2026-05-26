@@ -9,7 +9,7 @@ from src.exceptions.persistence_errors import (
     EntityNotFoundError,
 )
 from src.models.cuestionario_gad7 import CuestionarioGAD7
-from src.services.interfaces import IRepository
+from src.repositories.interfaces import IRepository
 
 
 class GAD7Repository(IRepository[CuestionarioGAD7]):
@@ -22,11 +22,11 @@ class GAD7Repository(IRepository[CuestionarioGAD7]):
     def __init__(self, ruta: Path = Path("data/cuestionarios_gad7.json")) -> None:
         self.ruta = ruta
 
-    def crear(self, cuestionario: CuestionarioGAD7) -> CuestionarioGAD7:
+    def crear(self, entidad: CuestionarioGAD7) -> CuestionarioGAD7:
         """Persiste un nuevo cuestionario GAD-7.
 
         Args:
-            cuestionario: instancia validada de CuestionarioGAD7.
+            entidad: instancia validada de CuestionarioGAD7.
 
         Returns:
             El mismo cuestionario persistido.
@@ -35,11 +35,11 @@ class GAD7Repository(IRepository[CuestionarioGAD7]):
             DuplicateEntityError: si ya existe un cuestionario con ese id.
         """
         registros = self._cargar()
-        if any(r["id"] == cuestionario.id for r in registros):
-            raise DuplicateEntityError(f"Ya existe un cuestionario con id '{cuestionario.id}'.")
-        registros.append(cuestionario.to_dict())
+        if any(r["id"] == entidad.id for r in registros):
+            raise DuplicateEntityError(f"Ya existe un cuestionario con id '{entidad.id}'.")
+        registros.append(entidad.to_dict())
         self._guardar(registros)
-        return cuestionario
+        return entidad
 
     def listar(self) -> list[CuestionarioGAD7]:
         """Retorna todos los cuestionarios GAD-7 almacenados."""
@@ -78,11 +78,11 @@ class GAD7Repository(IRepository[CuestionarioGAD7]):
         ]
         return sorted(resultados, key=lambda c: c.fecha_aplicacion, reverse=True)
 
-    def actualizar(self, cuestionario: CuestionarioGAD7) -> CuestionarioGAD7:
+    def actualizar(self, entidad: CuestionarioGAD7) -> CuestionarioGAD7:
         """Actualiza un cuestionario GAD-7 existente.
 
         Args:
-            cuestionario: instancia con los datos actualizados.
+            entidad: instancia con los datos actualizados.
 
         Returns:
             El cuestionario actualizado.
@@ -92,11 +92,11 @@ class GAD7Repository(IRepository[CuestionarioGAD7]):
         """
         registros = self._cargar()
         for i, r in enumerate(registros):
-            if r["id"] == cuestionario.id:
-                registros[i] = cuestionario.to_dict()
+            if r["id"] == entidad.id:
+                registros[i] = entidad.to_dict()
                 self._guardar(registros)
-                return cuestionario
-        raise EntityNotFoundError(f"No se encontró el cuestionario GAD-7 con id '{cuestionario.id}'.")
+                return entidad
+        raise EntityNotFoundError(f"No se encontró el cuestionario GAD-7 con id '{entidad.id}'.")
 
     def eliminar(self, codigo: str) -> None:
         """Elimina un cuestionario GAD-7 por su id.

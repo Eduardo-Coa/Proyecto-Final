@@ -32,3 +32,12 @@ class IRepository(ABC, Generic[T]):
     @abstractmethod
     def eliminar(self, codigo: str) -> None:
         """Elimina una entidad por su identificador único."""
+
+    def buscar_por_estudiante(self, codigo_estudiante: str) -> list[T]:
+        """Retorna todas las entidades asociadas a un estudiante.
+
+        Implementación opcional: por defecto retorna lista vacía.
+        Los repositorios cuyas entidades tienen 'codigo_estudiante' (GAD7, PHQ9,
+        Sesion) deben sobreescribir este método.
+        """
+        return []

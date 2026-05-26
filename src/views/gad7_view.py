@@ -205,6 +205,7 @@ class GAD7View(ttk.Frame):
         if not exito:
             self._mostrar_estado(str(resultado), "red")
             return
+        assert isinstance(resultado, list)
         for c in resultado:
             self._tabla.insert("", "end", values=(
                 c.id[:8] + "...",
