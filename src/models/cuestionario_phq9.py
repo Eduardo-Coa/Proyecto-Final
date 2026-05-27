@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List
 
 from src.exceptions.validation_errors import FechaInvalidaError, PuntajeInvalidoError
 from src.utils.constantes_negocio import (
@@ -16,108 +16,61 @@ from src.utils.constantes_negocio import (
 )
 
 TEXTOS_ITEMS_PHQ9 = [
-    "Poco interés o placer en hacer las cosas",
-    "Sentirse decaído, deprimido o sin esperanza",
-    "Problemas para dormir o permanecer dormido",
-    "Cansancio o poca energía",
-    "Poco apetito o comer en exceso",
-    "Sentirse mal consigo mismo o que es un fracaso",
-    "Problemas para concentrarse en actividades",
-    "Moverse o hablar tan lento que otras personas lo notan",
-    "Pensamientos de hacerse daño o de que estaría mejor muerto",
+    "1. Poco interés o placer en hacer las cosas",
+    "2. Sentirse decaído, deprimido o sin esperanza",
+    "3. Problemas para dormir o permanecer dormido",
+    "4. Cansancio o poca energía",
+    "5. Poco apetito o comer en exceso",
+    "6. Sentirse mal consigo mismo o que es un fracaso",
+    "7. Problemas para concentrarse en actividades",
+    "8. Moverse o hablar tan lento que otras personas lo notan",
+    "9. Pensamientos de hacerse daño o de que estaría mejor muerto",
 ]
 
-OPCIONES_RESPUESTA = {
-    0: "Nunca",
-    1: "Varios días",
-    2: "Más de la mitad de los días",
-    3: "Casi todos los días",
-}
-
-
-@dataclass
-class Respuesta:
-    """Respuesta a un ítem individual del PHQ-9.
-
-    Args:
-        numero_pregunta: número del ítem (1 a 9).
-        valor_respuesta: puntuación asignada (0 a 3).
-    """
-
-    numero_pregunta: int
-    valor_respuesta: int
-
-    def __post_init__(self) -> None:
-        if not (1 <= self.numero_pregunta <= NUM_ITEMS_PHQ9):
-            raise PuntajeInvalidoError(self.numero_pregunta, (1, NUM_ITEMS_PHQ9))
-        if not (PUNTAJE_MINIMO_ITEM <= self.valor_respuesta <= PUNTAJE_MAXIMO_ITEM):
-            raise PuntajeInvalidoError(self.valor_respuesta, (PUNTAJE_MINIMO_ITEM, PUNTAJE_MAXIMO_ITEM))
-
-    @property
-    def texto(self) -> str:
-        """Texto descriptivo del ítem."""
-        return TEXTOS_ITEMS_PHQ9[self.numero_pregunta - 1]
-
-    @property
-    def etiqueta_valor(self) -> str:
-        """Etiqueta textual del valor seleccionado."""
-        return OPCIONES_RESPUESTA[self.valor_respuesta]
-
-    def to_dict(self) -> dict:
-        return {
-            "numero_pregunta": self.numero_pregunta,
-            "valor_respuesta": self.valor_respuesta,
-        }
-
-    @classmethod
-    def from_dict(cls, datos: dict) -> Respuesta:
-        return cls(
-            numero_pregunta=datos["numero_pregunta"],
-            valor_respuesta=datos["valor_respuesta"],
-        )
+OPCIONES_RESPUESTA = [
+    "0 - Nunca",
+    "1 - Varios días",
+    "2 - Más de la mitad de los días",
+    "3 - Casi todos los días",
+]
 
 
 @dataclass
 class CuestionarioPHQ9:
-    """Cuestionario PHQ-9 aplicado a un estudiante.
+    """Representa una aplicación del cuestionario PHQ-9 (depresión).
 
     Args:
-        id: identificador único del cuestionario.
         codigo_estudiante: código institucional del estudiante evaluado.
-        fecha_aplicacion: fecha y hora en que se aplicó el cuestionario.
-        respuestas: lista de 9 valores enteros (0-3), uno por ítem.
-        puntaje_total: suma calculada automáticamente en __post_init__.
-        nivel_severidad: clasificación clínica calculada automáticamente.
+        respuestas: lista de 9 valores enteros entre 0 y 3.
+        fecha_aplicacion: fecha y hora de aplicación del cuestionario.
+        id: identificador único (generado automáticamente si no se provee).
+        puntaje_total: suma de respuestas (calculado automáticamente).
+        nivel_severidad: clasificación textual de severidad (calculada automáticamente).
     """
 
-    id: str
     codigo_estudiante: str
-    fecha_aplicacion: datetime
-    respuestas: List[int] = field(default_factory=list)
-    puntaje_total: int = 0
-    nivel_severidad: str = ""
+    respuestas: list[int]
+    fecha_aplicacion: datetime = field(default_factory=datetime.now)
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    puntaje_total: int = field(init=False)
+    nivel_severidad: str = field(init=False)
 
     def __post_init__(self) -> None:
-        self._validar()
-        if self.respuestas:
-            self.puntaje_total = self._calcular_puntaje()
-            self.nivel_severidad = self._clasificar_severidad()
+        self._validar_fecha()
+        self._validar_respuestas()
+        self.puntaje_total = self._calcular_puntaje()
+        self.nivel_severidad = self._clasificar_severidad()
 
-    def _validar(self) -> None:
-        if not self.id or not self.id.strip():
-            raise FechaInvalidaError("El ID del cuestionario no puede estar vacío.")
-        if not self.codigo_estudiante or not self.codigo_estudiante.strip():
-            raise FechaInvalidaError("El código del estudiante no puede estar vacío.")
-        if not isinstance(self.fecha_aplicacion, datetime):
-            raise FechaInvalidaError("La fecha de aplicación debe ser un datetime.")
+    def _validar_fecha(self) -> None:
         if self.fecha_aplicacion > datetime.now():
             raise FechaInvalidaError("La fecha de aplicación no puede ser futura.")
-        if self.respuestas:
-            if len(self.respuestas) != NUM_ITEMS_PHQ9:
-                raise PuntajeInvalidoError(len(self.respuestas), (NUM_ITEMS_PHQ9, NUM_ITEMS_PHQ9))
-            for i, valor in enumerate(self.respuestas):
-                if not (PUNTAJE_MINIMO_ITEM <= valor <= PUNTAJE_MAXIMO_ITEM):
-                    raise PuntajeInvalidoError(valor, (PUNTAJE_MINIMO_ITEM, PUNTAJE_MAXIMO_ITEM))
+
+    def _validar_respuestas(self) -> None:
+        if len(self.respuestas) != NUM_ITEMS_PHQ9:
+            raise PuntajeInvalidoError(len(self.respuestas), (NUM_ITEMS_PHQ9, NUM_ITEMS_PHQ9))
+        for i, valor in enumerate(self.respuestas, start=1):
+            if not (PUNTAJE_MINIMO_ITEM <= valor <= PUNTAJE_MAXIMO_ITEM):
+                raise PuntajeInvalidoError(valor, (PUNTAJE_MINIMO_ITEM, PUNTAJE_MAXIMO_ITEM))
 
     def _calcular_puntaje(self) -> int:
         return sum(self.respuestas)
@@ -139,22 +92,22 @@ class CuestionarioPHQ9:
         return self.puntaje_total >= PUNTAJE_RIESGO_SEVERO_PHQ9
 
     def to_dict(self) -> dict:
+        """Serializa el cuestionario a diccionario para persistencia JSON."""
         return {
             "id": self.id,
             "codigo_estudiante": self.codigo_estudiante,
-            "fecha_aplicacion": self.fecha_aplicacion.isoformat(),
             "respuestas": self.respuestas,
             "puntaje_total": self.puntaje_total,
             "nivel_severidad": self.nivel_severidad,
+            "fecha_aplicacion": self.fecha_aplicacion.isoformat(),
         }
 
     @classmethod
     def from_dict(cls, datos: dict) -> CuestionarioPHQ9:
+        """Reconstruye un CuestionarioPHQ9 desde un diccionario JSON."""
         return cls(
             id=datos["id"],
             codigo_estudiante=datos["codigo_estudiante"],
+            respuestas=datos["respuestas"],
             fecha_aplicacion=datetime.fromisoformat(datos["fecha_aplicacion"]),
-            respuestas=datos.get("respuestas", []),
-            puntaje_total=datos.get("puntaje_total", 0),
-            nivel_severidad=datos.get("nivel_severidad", ""),
         )
