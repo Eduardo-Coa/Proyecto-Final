@@ -101,6 +101,40 @@ class GAD7Controller:
         except PersistenceError as e:
             return False, str(e)
 
+    def actualizar(
+        self,
+        id_cuestionario: str,
+        codigo_estudiante: str,
+        respuestas: list[int],
+    ) -> tuple[bool, str]:
+        """Actualiza un cuestionario GAD-7 existente.
+
+        Args:
+            id_cuestionario: id del cuestionario a actualizar.
+            codigo_estudiante: nuevo código institucional.
+            respuestas: nueva lista de 7 valores enteros entre 0 y 3.
+
+        Returns:
+            (True, mensaje_éxito) o (False, mensaje_error).
+        """
+        try:
+            cuestionario = CuestionarioGAD7(
+                id=id_cuestionario,
+                codigo_estudiante=codigo_estudiante,
+                respuestas=respuestas,
+            )
+            self._repo.actualizar(cuestionario)
+            return True, (
+                f"GAD-7 actualizado correctamente. "
+                f"Puntaje: {cuestionario.puntaje_total} — {cuestionario.nivel_severidad}."
+            )
+        except EntityNotFoundError as e:
+            return False, str(e)
+        except ValidationError as e:
+            return False, str(e)
+        except PersistenceError as e:
+            return False, str(e)
+
     def eliminar(self, id_cuestionario: str) -> tuple[bool, str]:
         """Elimina un cuestionario GAD-7 por su id.
 

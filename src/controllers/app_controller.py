@@ -6,7 +6,9 @@ from tkinter import ttk
 from src.controllers.gad7_controller import GAD7Controller
 from src.repositories.db_config import obtener_conexion
 from src.repositories.gad7_mysql_repository import GAD7MySQLRepository
+from src.services.email_service import EmailService
 from src.services.gad7_business_service import GAD7BusinessService
+from src.services.notificacion_decorator import NotificacionDecorator
 from src.views.gad7_view import GAD7View
 
 
@@ -34,9 +36,7 @@ class AppController:
 
     def _construir_servicios_compartidos(self) -> None:
         """Servicios usados por más de un BusinessService (Email, Alertas)."""
-        # TODO (equipo): cuando se implemente src.services.email_service.EmailService,
-        # reemplazar este stub por: EmailService(modo_simulacion=True)
-        self._email_service = _EmailServiceStub()
+        self._email_service = EmailService(modo_simulacion=True)
 
         # TODO (equipo): cuando se implemente src.repositories.alerta_repository.AlertaRepository,
         # reemplazar este stub por: AlertaRepository()
@@ -51,9 +51,15 @@ class AppController:
         # self._phq9_repo = PHQ9Repository()
         self._phq9_repo = _PHQ9RepoStub()  # temporal hasta que Eduardo agregue su repo
 
-        # Diunis — GAD7 (MySQL)
+        # Diunis — GAD7 (MySQL) envuelto en NotificacionDecorator (patrón GoF, criterio 7)
         # Para volver a JSON local: usar GAD7JsonRepository(Path("data/cuestionarios_gad7.json"))
-        self._gad7_repo = GAD7MySQLRepository(self._conexion_db)
+        repo_base = GAD7MySQLRepository(self._conexion_db)
+        self._gad7_repo = NotificacionDecorator(
+            repositorio=repo_base,
+            email_service=self._email_service,
+            destinatario="bienestar@uni.edu",
+            nombre_entidad="GAD-7",
+        )
 
         # TODO (Ceni): from src.repositories.sesion_repository import SesionRepository
         # self._sesion_repo = SesionRepository()
@@ -142,13 +148,6 @@ class AppController:
 # ─────────────────────────── Stubs temporales ────────────────────────────
 # Estas clases existen solo para que la app arranque sin todas las piezas.
 # Cada una debe ser reemplazada por su implementación real cuando esté lista.
-
-
-class _EmailServiceStub:
-    """Stub temporal de EmailService — imprime en consola en lugar de enviar."""
-
-    def enviar(self, destinatario: str, asunto: str, cuerpo: str) -> None:
-        print(f"\n[EMAIL SIMULADO]\n  Para: {destinatario}\n  Asunto: {asunto}\n  {cuerpo}\n")
 
 
 class _AlertaRepoStub:

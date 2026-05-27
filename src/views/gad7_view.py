@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from src.controllers.gad7_controller import GAD7Controller
+from src.models.cuestionario_gad7 import CuestionarioGAD7
 from src.utils.constantes_negocio import NUM_ITEMS_GAD7, PUNTAJE_MINIMO_ITEM, PUNTAJE_MAXIMO_ITEM
 
 PREGUNTAS_GAD7 = [
@@ -36,6 +37,7 @@ class GAD7View(ttk.Frame):
         super().__init__(parent)
         self._controller = controller
         self._id_seleccionado: str | None = None
+        self._cuestionarios_por_id: dict[str, CuestionarioGAD7] = {}
         self._vars_respuestas: list[tk.StringVar] = [
             tk.StringVar(value=OPCIONES_RESPUESTA[0]) for _ in range(NUM_ITEMS_GAD7)
         ]
@@ -91,6 +93,10 @@ class GAD7View(ttk.Frame):
         frame_botones.grid(row=4 + NUM_ITEMS_GAD7, column=0, columnspan=2, pady=(10, 0))
 
         ttk.Button(frame_botones, text="Guardar", command=self._guardar).pack(side="left", padx=4)
+        self._btn_actualizar = ttk.Button(
+            frame_botones, text="Actualizar", command=self._actualizar, state="disabled"
+        )
+        self._btn_actualizar.pack(side="left", padx=4)
         ttk.Button(frame_botones, text="Eliminar", command=self._eliminar).pack(side="left", padx=4)
         ttk.Button(frame_botones, text="Limpiar", command=self._limpiar).pack(side="left", padx=4)
 
@@ -153,11 +159,18 @@ class GAD7View(ttk.Frame):
         seleccion = self._tabla.selection()
         if not seleccion:
             return
-        valores = self._tabla.item(seleccion[0])["values"]
-        self._id_seleccionado = str(valores[0])
+        self._id_seleccionado = seleccion[0]
+        cuestionario = self._cuestionarios_por_id.get(self._id_seleccionado)
+        if cuestionario is None:
+            return
         self._ent_codigo.delete(0, tk.END)
-        self._ent_codigo.insert(0, str(valores[1]))
-        self._mostrar_estado(f"Cuestionario {self._id_seleccionado[:8]}... seleccionado.", "gray")
+        self._ent_codigo.insert(0, cuestionario.codigo_estudiante)
+        for i, valor in enumerate(cuestionario.respuestas):
+            self._vars_respuestas[i].set(OPCIONES_RESPUESTA[valor])
+        self._btn_actualizar.config(state="normal")
+        self._mostrar_estado(
+            f"Cuestionario {self._id_seleccionado[:8]}... seleccionado.", "gray"
+        )
 
     # ------------------------------------------------------------------ Acciones CRUD
 
@@ -165,6 +178,22 @@ class GAD7View(ttk.Frame):
         codigo = self._ent_codigo.get().strip()
         respuestas = self._get_respuestas()
         exito, mensaje = self._controller.registrar(codigo, respuestas)
+        if exito:
+            self._mostrar_estado(mensaje, "green")
+            self._limpiar()
+            self._cargar_tabla()
+        else:
+            self._mostrar_estado(mensaje, "red")
+
+    def _actualizar(self) -> None:
+        if not self._id_seleccionado:
+            self._mostrar_estado("Selecciona un cuestionario para actualizar.", "red")
+            return
+        codigo = self._ent_codigo.get().strip()
+        respuestas = self._get_respuestas()
+        exito, mensaje = self._controller.actualizar(
+            self._id_seleccionado, codigo, respuestas
+        )
         if exito:
             self._mostrar_estado(mensaje, "green")
             self._limpiar()
@@ -197,23 +226,26 @@ class GAD7View(ttk.Frame):
         self._id_seleccionado = None
         self._lbl_puntaje.config(text="Puntaje estimado: 0 — Mínimo", foreground="gray")
         self._tabla.selection_remove(self._tabla.selection())
+        self._btn_actualizar.config(state="disabled")
 
     def _cargar_tabla(self) -> None:
         for fila in self._tabla.get_children():
             self._tabla.delete(fila)
+        self._cuestionarios_por_id.clear()
         exito, resultado = self._controller.listar()
         if not exito:
             self._mostrar_estado(str(resultado), "red")
             return
         assert isinstance(resultado, list)
         for c in resultado:
-            self._tabla.insert("", "end", values=(
+            self._tabla.insert("", "end", iid=c.id, values=(
                 c.id[:8] + "...",
                 c.codigo_estudiante,
                 c.puntaje_total,
                 c.nivel_severidad,
                 c.fecha_aplicacion.strftime("%Y-%m-%d %H:%M"),
             ))
+            self._cuestionarios_por_id[c.id] = c
 
     def _mostrar_estado(self, mensaje: str, color: str) -> None:
         self._lbl_estado.config(text=mensaje, foreground=color)
