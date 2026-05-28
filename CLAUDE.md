@@ -6,9 +6,9 @@
 
 ## 1. ¿Qué es este proyecto?
 
-Una aplicación de escritorio en Python para el área de **Bienestar Universitario**. Permite registrar y monitorear el estado emocional de estudiantes mediante los instrumentos clínicos validados **PHQ-9** (depresión) y **GAD-7** (ansiedad). El sistema gestiona la información, aplica reglas clínicas automáticas, notifica por correo y analiza los datos con ciencia de datos y machine learning.
+Una aplicación de escritorio en Python para el área de **Bienestar Universitario**. Permite registrar y monitorear el estado emocional de estudiantes mediante los instrumentos clínicos validados **PHQ-9** (depresión) y **GAD-7** (ansiedad). El sistema gestiona la información, aplica reglas clínicas automáticas, notifica por correo y analiza los datos con estadística descriptiva.
 
-**Es un proyecto académico de programación** con criterios de evaluación específicos. Cada decisión técnica (MVC, Decorator, JSON, Tkinter, Regresión Logística) fue tomada en función de esos criterios.
+**Es un proyecto académico de programación** con criterios de evaluación específicos. Cada decisión técnica (MVC, Decorator, Tkinter) fue tomada en función de esos criterios.
 
 ---
 
@@ -17,7 +17,7 @@ Una aplicación de escritorio en Python para el área de **Bienestar Universitar
 | Integrante | Entidad CRUD | Regla de negocio | Contribución analítica |
 |---|---|---|---|
 | **1** | `Estudiante` | Código único + edad ≥ 16 + semestre 1-12 | Dashboard demográfico (distribución por programa/semestre) |
-| **2** | `CuestionarioPHQ9` | Puntaje ≥ 20 → riesgo severo + dispara EmailService | Modelo ML: Regresión Logística para clasificar severidad |
+| **2** | `CuestionarioPHQ9` | Puntaje ≥ 20 → riesgo severo + dispara EmailService | Estadística descriptiva: distribución de puntajes y severidad PHQ-9 |
 | **3** | `CuestionarioGAD7` | GAD ≥ 15 → severa; comorbilidad si PHQ-9 severo reciente | Análisis bivariado: correlación PHQ-9 ↔ GAD-7 |
 | **4** | `SesionSeguimiento` | Solo agendar si: tiene cuestionario + no hay otra sesión ese día + hora 08-18 | Series temporales: evolución del puntaje del estudiante |
 
@@ -31,8 +31,7 @@ Una aplicación de escritorio en Python para el área de **Bienestar Universitar
 | UI | Tkinter + ttk |
 | Visualización | matplotlib (embebido con `FigureCanvasTkAgg`) |
 | Análisis de datos | pandas |
-| Machine Learning | scikit-learn (Regresión Logística), joblib |
-| Persistencia | JSON (archivos en `data/`) |
+| Persistencia | MySQL (mysql-connector-python) + credenciales en `.env` |
 | Testing | pytest + pytest-cov |
 | Patrón arquitectónico | MVC |
 | Patrón GoF | Decorator (EmailService) |
@@ -50,17 +49,16 @@ proyecto-psicoeducativo/
 ├── main.py                            ← Entry point de la app
 │
 ├── .claude/
-│   └── skills/                        ← 10 skills de Claude Code
+│   └── skills/                        ← skills de Claude Code
 │       ├── project-architecture/      → Estructura MVC, PEP8, Clean Code
-│       ├── entity-crud/               → CRUD + validaciones + JSON
+│       ├── entity-crud/               → CRUD + validaciones + persistencia
 │       ├── custom-exceptions/         → Jerarquía de excepciones
 │       ├── business-rules/            → 4 reglas de negocio (una por integrante)
 │       ├── testing-pytest/            → 10 tests por integrante, AAA, fixtures
 │       ├── email-decorator/           → EmailService + patrón Decorator GoF
 │       ├── ui-tkinter-nielsen/        → Vistas Tkinter + 10 heurísticas Nielsen
 │       ├── synthetic-data/            → Generador de datos sintéticos realistas
-│       ├── data-analysis/             → pandas + matplotlib + dashboard
-│       └── ml-pipeline/               → scikit-learn + entrenamiento + predicción
+│       └── data-analysis/             → pandas + matplotlib + dashboard
 │
 ├── src/
 │   ├── models/                        ← Entidades del dominio
@@ -84,13 +82,16 @@ proyecto-psicoeducativo/
 │   │   ├── gad7_controller.py
 │   │   └── sesion_controller.py
 │   │
-│   ├── services/                      ← Repositorios JSON + EmailService + Decorator
+│   ├── repositories/                  ← Persistencia MySQL + interfaz + conexión
 │   │   ├── interfaces.py              ← IRepository (ABC) — necesario para Decorator
+│   │   ├── db_config.py              ← obtener_conexion() lee credenciales del .env
 │   │   ├── estudiante_repository.py
-│   │   ├── phq9_repository.py
-│   │   ├── gad7_repository.py
+│   │   ├── phq9_mysql_repository.py
+│   │   ├── gad7_mysql_repository.py
 │   │   ├── sesion_repository.py
-│   │   ├── alerta_repository.py       ← Persiste AlertaRiesgo (no CRUD calificable)
+│   │   └── alerta_repository.py       ← Persiste AlertaRiesgo (no CRUD calificable)
+│   │
+│   ├── services/                      ← EmailService + Decorator + reglas de negocio
 │   │   ├── email_service.py           ← EmailService (modo simulación por defecto)
 │   │   ├── notificacion_decorator.py  ← Decorator GoF que envuelve IRepository
 │   │   ├── phq9_business_service.py   ← Regla del integrante 2
@@ -105,31 +106,19 @@ proyecto-psicoeducativo/
 │   │   └── notification_errors.py     ← EmailEnvioError
 │   │
 │   ├── analytics/                     ← Capa transversal de análisis (NO es MVC)
-│   │   ├── data_loader.py             ← JSON → DataFrame tipado
+│   │   ├── data_loader.py             ← MySQL → DataFrame tipado
 │   │   ├── descriptive_stats.py       ← media, mediana, distribuciones, clasificaciones
 │   │   ├── correlations.py            ← correlación Pearson PHQ-9 ↔ GAD-7
 │   │   └── visualizations.py          ← Funciones que devuelven Figure (nunca plt.show())
-│   │
-│   ├── ml/                            ← Pipeline de Machine Learning
-│   │   ├── features.py                ← Construcción de X, y desde DataFrame
-│   │   ├── train_classifier.py        ← Entrena y persiste el modelo (script offline)
-│   │   ├── predictor.py               ← PHQ9Predictor: carga modelo y predice
-│   │   ├── evaluation.py              ← Métricas y visualización de matriz de confusión
-│   │   └── models/                    ← phq9_classifier.joblib (NO commitear)
 │   │
 │   └── utils/
 │       └── constantes_negocio.py      ← TODAS las constantes clínicas y de negocio
 │
 ├── scripts/
-│   └── generar_datos_sinteticos.py    ← python scripts/generar_datos_sinteticos.py --n-estudiantes 500
+│   ├── crear_schema.sql               ← Crea la BD bienestar_universitario y sus tablas
+│   └── generar_datos_sinteticos.py    ← Inserta datos en MySQL: --n-estudiantes 500
 │
-├── data/                              ← JSONs de persistencia (generados localmente)
-│   ├── estudiantes.json
-│   ├── cuestionarios_phq9.json
-│   ├── cuestionarios_gad7.json
-│   ├── sesiones.json
-│   ├── alertas.json
-│   └── psicologos.json                ← Precargado con psicólogos de ejemplo
+├── .env                               ← Credenciales MySQL (NO commitear, está en .gitignore)
 │
 ├── tests/
 │   ├── conftest.py                    ← Fixtures compartidas (tmp_path, mocks)
@@ -152,8 +141,8 @@ proyecto-psicoeducativo/
 **Model** (`src/models/`):
 - Solo atributos + validaciones en `__post_init__` o setters.
 - Lanza excepciones de `src/exceptions/validation_errors.py`.
-- Nunca toca archivos ni conoce la vista ni el controlador.
-- Implementa `to_dict()` y `from_dict()` para serialización JSON.
+- Nunca toca la base de datos ni conoce la vista ni el controlador.
+- Implementa `to_dict()` y `from_dict()` para conversión desde/hacia filas de MySQL.
 
 **View** (`src/views/`):
 - Solo Tkinter. Cero lógica de negocio.
@@ -166,9 +155,9 @@ proyecto-psicoeducativo/
 - Captura excepciones del dominio y las traduce a `(bool, str)` para la vista.
 - Nunca contiene lógica de negocio propia: delega al modelo y a `services/`.
 
-**Analytics / ML** (`src/analytics/`, `src/ml/`):
-- Capas transversales, NO son parte del MVC.
-- El dashboard view las consume directamente.
+**Analytics** (`src/analytics/`):
+- Capa transversal, NO es parte del MVC.
+- El dashboard view la consume directamente.
 - Las funciones de analytics reciben DataFrames, no archivos.
 - Las funciones de visualización devuelven `Figure`, nunca dibujan ellas mismas.
 
@@ -353,38 +342,14 @@ controller = EstudianteController(repo=repo, email_service=email)
 
 ---
 
-## 11. Pipeline de Machine Learning
-
-**Modelo**: Regresión Logística multinomial (scikit-learn).
-**Input**: 9 respuestas del PHQ-9 (valores 0-3).
-**Output**: clase de severidad (Mínima, Leve, Moderada, Mod. Severa, Severa).
-
-**Flujo de uso**:
-```bash
-# 1. Generar datos sintéticos (necesario antes de entrenar)
-python scripts/generar_datos_sinteticos.py --n-estudiantes 500
-
-# 2. Entrenar y persistir el modelo
-python -m src.ml.train_classifier
-
-# 3. El predictor se carga automáticamente en la app
-python main.py
-```
-
-**Nunca entrenar en cada arranque de la app.** El modelo se entrena offline y se carga con joblib.
-
-**Accuracy esperado**: ≥ 0.85 (la tarea es casi determinística porque las etiquetas se derivan de la suma de respuestas).
-
----
-
-## 12. Testing
+## 11. Testing
 
 - **Framework**: pytest
 - **Mínimo por integrante**: 10 tests (criterio 6), incluyendo el test de su regla de negocio.
 - **Patrón**: AAA (Arrange-Act-Assert).
 - **Naming**: `test_<sujeto>_<accion>_<resultado_esperado>`.
-- **Fixtures en `conftest.py`**: `tmp_path` para JSONs, `Mock` para EmailService.
-- **NUNCA** leer/escribir archivos reales en tests — usar `tmp_path` de pytest.
+- **Fixtures en `conftest.py`**: `Mock`/`MagicMock` para repositorios, EmailService y conexión MySQL.
+- **NUNCA** conectar a MySQL real en tests — mockear el repositorio o la conexión.
 
 **Comandos**:
 ```bash
@@ -396,7 +361,7 @@ pytest -v --tb=short > docs/reporte_tests.txt # Reporte para entrega
 
 ---
 
-## 13. UI Tkinter
+## 12. UI Tkinter
 
 - Ventana principal: `ttk.Notebook` con 5 pestañas (4 CRUDs + Dashboard analítico).
 - **SIEMPRE** feedback inmediato en `lbl_estado` (heurística Nielsen #1).
@@ -407,18 +372,18 @@ pytest -v --tb=short > docs/reporte_tests.txt # Reporte para entrega
 
 ---
 
-## 14. Datos sintéticos
+## 13. Datos sintéticos
 
-- Script: `scripts/generar_datos_sinteticos.py`
+- Script: `scripts/generar_datos_sinteticos.py` (inserta directamente en MySQL).
 - Seed fijo: `SEED = 42` (reproducible).
 - Correlación PHQ-9 ↔ GAD-7 esperada: r ≈ 0.65-0.75.
 - Distribuciones basadas en literatura clínica para poblaciones universitarias.
-- Los JSONs generados **no se commitean** al repo (están en `.gitignore`).
-- Cada integrante ejecuta el script localmente antes de arrancar la app.
+- Requiere haber ejecutado antes `scripts/crear_schema.sql` para crear las tablas.
+- Cada integrante ejecuta el script contra su MySQL local antes de arrancar la app.
 
 ---
 
-## 15. Comandos de referencia rápida
+## 14. Comandos de referencia rápida
 
 ```bash
 # Instalar dependencias
@@ -426,9 +391,6 @@ pip install -r requirements.txt
 
 # Generar datos
 python scripts/generar_datos_sinteticos.py --n-estudiantes 500
-
-# Entrenar modelo ML
-python -m src.ml.train_classifier
 
 # Ejecutar app
 python main.py
@@ -443,7 +405,7 @@ flake8 src/ --max-line-length=100
 
 ---
 
-## 16. Mapeo de criterios de evaluación
+## 15. Mapeo de criterios de evaluación
 
 | # | Criterio | Skill de referencia | Estado |
 |---|---|---|---|
@@ -454,7 +416,7 @@ flake8 src/ --max-line-length=100
 | 5 | Regla de negocio por integrante | `business-rules` | ⬜ Pendiente |
 | 6 | 10 tests por integrante | `testing-pytest` | ⬜ Pendiente |
 | 7 | EmailService con Decorator GoF | `email-decorator` | ⬜ Pendiente |
-| 8 | Persistencia JSON | `entity-crud` | ⬜ Pendiente |
+| 8 | Persistencia MySQL | `entity-crud` | ⬜ Pendiente |
 | 9 | UI Tkinter + Nielsen | `ui-tkinter-nielsen` | ⬜ Pendiente |
 | 10 | Clean Code + PEP8 | `project-architecture` | ⬜ Pendiente |
 
@@ -462,15 +424,12 @@ Cambiar ⬜ a ✅ a medida que cada criterio quede implementado y testeado.
 
 ---
 
-## 17. Lo que Claude NO debe hacer en este proyecto
+## 16. Lo que Claude NO debe hacer en este proyecto
 
 - Proponer frameworks distintos a Tkinter para la UI (no Streamlit, no Flask, no PyQt5).
 - Usar herencia para implementar el Decorator GoF (eso NO es Decorator).
 - Usar `plt.show()` en ninguna función de visualización.
-- Sugerir modelos ML complejos (Random Forest, XGBoost, redes neuronales) — usar solo Regresión Logística.
 - Capturar `Exception` genérico en código de negocio.
 - Poner lógica de negocio en las vistas o en los modelos (MVC estricto).
-- Leer archivos JSON directamente desde los controladores (eso es del repositorio).
-- Usar `pickle` para persistir el modelo ML — usar `joblib`.
-- Proponer base de datos (SQLite, PostgreSQL) — la persistencia es **solo JSON**.
-- Commitear archivos `.joblib` ni JSONs de data al repo.
+- Acceder a MySQL directamente desde los controladores (eso es del repositorio).
+- Commitear el archivo `.env` con credenciales al repo.
