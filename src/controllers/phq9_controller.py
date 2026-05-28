@@ -6,7 +6,7 @@ from src.exceptions.business_errors import BusinessRuleError
 from src.exceptions.persistence_errors import EntityNotFoundError, PersistenceError
 from src.exceptions.validation_errors import ValidationError
 from src.models.cuestionario_phq9 import CuestionarioPHQ9
-from src.Interfaces.interfaces import IRepository
+from src.repositories.interfaces import IRepository
 
 
 class PHQ9Controller:

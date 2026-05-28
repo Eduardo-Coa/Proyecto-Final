@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
-from src.Interfaces.interfaces import IRepository
+from src.repositories.interfaces import IRepository
 from src.services.email_service import EmailService
 
 T = TypeVar("T")

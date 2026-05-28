@@ -10,7 +10,7 @@ from src.exceptions.persistence_errors import (
     EntityNotFoundError,
 )
 from src.models.cuestionario_phq9 import CuestionarioPHQ9
-from src.Interfaces.interfaces import IRepository
+from src.repositories.interfaces import IRepository
 
 
 class PHQ9MySQLRepository(IRepository[CuestionarioPHQ9]):
