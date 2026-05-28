@@ -13,7 +13,7 @@ from src.exceptions.persistence_errors import (
     EntityNotFoundError,
 )
 from src.models.sesion_seguimiento import SesionSeguimiento
-from src.services.interfaces import IRepository
+from src.interfaces.interfaces import IRepository
 
 
 class SesionRepository(IRepository[SesionSeguimiento]):
