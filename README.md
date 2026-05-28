@@ -105,6 +105,12 @@ source .venv/bin/activate           # Linux/Mac
 # Dependencias
 pip install -r requirements.txt
 
+# Configurar MySQL
+copy .env.example .env                # Windows
+# cp .env.example .env                # Linux/Mac
+# Editar .env con el usuario y password de MySQL
+mysql -u root -p < scripts/crear_schema.sql
+
 # 1. Generar datos sintéticos (necesario para que la app tenga datos)
 python scripts/generar_datos_sinteticos.py --n-estudiantes 500
 
