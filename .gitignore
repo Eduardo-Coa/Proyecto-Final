@@ -26,3 +26,8 @@ htmlcov/
 # Credenciales (NUNCA commitear)
 .env
 credenciales.json
+
+# Archivos de agentes IA (instrucciones locales, no se comparten en el repo)
+.claude/
+AGENTS.md
+CLAUDE.md
