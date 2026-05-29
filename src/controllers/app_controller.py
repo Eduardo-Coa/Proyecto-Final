@@ -11,6 +11,7 @@ from src.repositories.sesion_repository import SesionRepository
 from src.services.email_service import EmailService
 from src.services.notificacion_decorator import NotificacionDecorator
 from src.services.sesion_business_service import SesionBusinessService
+from src.views.dashboard_view import DashboardView
 from src.views.sesion_view import SesionView
 
 
@@ -99,8 +100,8 @@ class AppController:
         sesion_view = SesionView(notebook, self._sesion_controller)
         notebook.add(sesion_view, text="Sesiones")
 
-        # TODO (equipo): Dashboard analítico
-        self._agregar_placeholder(notebook, "Dashboard", "equipo (analytics)")
+        dashboard_view = DashboardView(notebook)
+        notebook.add(dashboard_view, text="Dashboard")
 
         self._root.mainloop()
 
