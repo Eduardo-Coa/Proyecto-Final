@@ -1,38 +1,46 @@
-"""Configuracion de conexion MySQL."""
-
 from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 import mysql.connector
 from dotenv import load_dotenv
-from mysql.connector import Error as MySQLError
-from mysql.connector import MySQLConnection
-
-from src.exceptions.persistence_errors import DatabaseConnectionError
 
 
-ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
-DEFAULT_DATABASE = "bienestar_universitario"
+_ENV_LOADED = False
 
 
-def obtener_conexion() -> MySQLConnection:
-    """Crea una conexion MySQL usando variables de entorno."""
-    load_dotenv(ENV_PATH)
+def _cargar_env() -> None:
+    """Carga el archivo .env (solo una vez por ejecución)."""
+    global _ENV_LOADED
+    if _ENV_LOADED:
+        return
+    ruta_env = Path(__file__).resolve().parent.parent.parent / ".env"
+    if not ruta_env.exists():
+        raise FileNotFoundError(
+            f"No se encontró el archivo .env en '{ruta_env}'. "
+            "Copia .env.example a .env y completa tus credenciales."
+        )
+    load_dotenv(ruta_env)
+    _ENV_LOADED = True
 
-    config = {
-        "host": os.getenv("MYSQL_HOST", "localhost"),
-        "port": int(os.getenv("MYSQL_PORT", "3306")),
-        "user": os.getenv("MYSQL_USER", "root"),
-        "password": os.getenv("MYSQL_PASSWORD", ""),
-        "database": os.getenv("MYSQL_DATABASE", DEFAULT_DATABASE),
-    }
 
-    try:
-        return mysql.connector.connect(**config)
-    except MySQLError as exc:
-        raise DatabaseConnectionError(
-            "No se pudo conectar a MySQL. Verifica que el servidor este activo, "
-            "que exista la base de datos y que las credenciales de .env sean correctas."
-        ) from exc
+def obtener_conexion() -> Any:
+    """Crea y retorna una conexión a MySQL usando las credenciales del .env.
+
+    Returns:
+        Objeto de conexión activo a MySQL.
+
+    Raises:
+        FileNotFoundError: si no existe el archivo .env.
+        mysql.connector.Error: si falla la conexión a MySQL.
+    """
+    _cargar_env()
+    return mysql.connector.connect(
+        host=os.environ["MYSQL_HOST"],
+        port=int(os.environ["MYSQL_PORT"]),
+        user=os.environ["MYSQL_USER"],
+        password=os.environ["MYSQL_PASSWORD"],
+        database=os.environ["MYSQL_DATABASE"],
+    )

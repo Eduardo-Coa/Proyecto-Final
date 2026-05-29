@@ -9,7 +9,7 @@ Uso:
     python scripts/generar_datos_sinteticos.py --n-estudiantes 200
     python scripts/generar_datos_sinteticos.py --limpiar
 
-El seed esta fijo en 42, con datos reproducibles entre ejecuciones.
+El seed está fijo en 42 → datos reproducibles entre ejecuciones.
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ MOTIVOS_SESION = [
 ESTADOS_SESION = ["AGENDADA", "REALIZADA", "CANCELADA"]
 
 
-# Generadores por tabla
+# ─────────────────────── Generadores por tabla ──────────────────────────────
 
 
 def generar_estudiantes(cursor, n: int) -> list[str]:
@@ -129,7 +129,7 @@ def generar_cuestionarios(cursor, codigos_estudiantes: list[str]) -> None:
 
     Para cada estudiante: genera un 'nivel base' de malestar (0..1) y a partir
     de él calcula los puntajes de GAD-7 y PHQ-9 con algo de ruido. Esto produce
-    una correlacion r aproximada de 0.65 a 0.75 entre ambos puntajes.
+    una correlación r ≈ 0.65–0.75 entre ambos puntajes (literatura clínica).
     """
     ahora = datetime.now()
     for codigo in codigos_estudiantes:
@@ -221,7 +221,7 @@ def limpiar_tablas(cursor) -> None:
     cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
 
 
-# Punto de entrada
+# ─────────────────────── Punto de entrada ──────────────────────────────────
 
 
 def main() -> None:

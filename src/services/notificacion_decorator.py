@@ -1,5 +1,3 @@
-"""Decorator GoF que añade notificación por correo a un IRepository."""
-
 from __future__ import annotations
 
 from typing import Generic, TypeVar
@@ -17,13 +15,11 @@ class NotificacionDecorator(IRepository[T], Generic[T]):
     crear/actualizar exitoso, dispara un correo al destinatario configurado.
     El resto de operaciones (listar, buscar, eliminar) se delegan tal cual.
 
-    Implementa el patrón Decorator por composición (no herencia).
-
     Args:
         repositorio: instancia concreta de IRepository (la que se envuelve).
         email_service: servicio de correo que realiza el envío.
         destinatario: dirección que recibirá las notificaciones.
-        nombre_entidad: nombre humano de la entidad (ej. 'Sesion'), para los asuntos.
+        nombre_entidad: nombre humano de la entidad (ej. 'PHQ-9'), para los asuntos.
     """
 
     def __init__(
@@ -39,11 +35,13 @@ class NotificacionDecorator(IRepository[T], Generic[T]):
         self._nombre_entidad = nombre_entidad
 
     def crear(self, entidad: T) -> T:
+        """Delega la creación y notifica por correo si fue exitosa."""
         resultado = self._repositorio.crear(entidad)
         self._notificar("creado", entidad)
         return resultado
 
     def actualizar(self, entidad: T) -> T:
+        """Delega la actualización y notifica por correo si fue exitosa."""
         resultado = self._repositorio.actualizar(entidad)
         self._notificar("actualizado", entidad)
         return resultado
@@ -55,9 +53,7 @@ class NotificacionDecorator(IRepository[T], Generic[T]):
         return self._repositorio.buscar_por_codigo(codigo)
 
     def buscar_por_estudiante(self, codigo_estudiante: str) -> list[T]:
-        if hasattr(self._repositorio, "buscar_por_estudiante"):
-            return self._repositorio.buscar_por_estudiante(codigo_estudiante)
-        return []
+        return self._repositorio.buscar_por_estudiante(codigo_estudiante)
 
     def eliminar(self, codigo: str) -> None:
         self._repositorio.eliminar(codigo)

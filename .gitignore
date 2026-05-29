@@ -20,13 +20,15 @@ htmlcov/
 *.swp
 .DS_Store
 
-# Agent local configuration
-.claude/
-.codex/
-
 # Data (decidir si commitearla o no)
 # data/*.json
 
 # Credenciales (NUNCA commitear)
 .env
 credenciales.json
+
+# Archivos de agentes IA (instrucciones/config local, no se comparten en el repo)
+.claude/
+.codex/
+AGENTS.md
+CLAUDE.md

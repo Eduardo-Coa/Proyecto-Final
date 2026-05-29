@@ -1,8 +1,8 @@
 {
-  "pythonVersion": "3.14",
-  "pythonPlatform": "Darwin",
   "venvPath": ".",
   "venv": ".venv",
-  "extraPaths": ["."],
-  "include": ["src", "tests"]
+  "pythonVersion": "3.14",
+  "extraPaths": [
+    "."
+  ]
 }

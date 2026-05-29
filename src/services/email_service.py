@@ -1,5 +1,3 @@
-"""Servicio de envío de correos electrónicos."""
-
 from __future__ import annotations
 
 import smtplib
@@ -41,7 +39,16 @@ class EmailService:
         self.remitente = remitente
 
     def enviar(self, destinatario: str, asunto: str, cuerpo: str) -> None:
-        """Envía un correo electrónico."""
+        """Envía un correo electrónico.
+
+        Args:
+            destinatario: dirección de correo del destinatario.
+            asunto: asunto del mensaje.
+            cuerpo: cuerpo del mensaje en texto plano.
+
+        Raises:
+            EmailEnvioError: si falla el envío SMTP real.
+        """
         if self.modo_simulacion:
             self._enviar_simulado(destinatario, asunto, cuerpo)
             return
