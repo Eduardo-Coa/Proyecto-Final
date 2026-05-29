@@ -20,6 +20,10 @@ htmlcov/
 *.swp
 .DS_Store
 
+# Agent local configuration
+.claude/
+.codex/
+
 # Data (decidir si commitearla o no)
 # data/*.json
 
