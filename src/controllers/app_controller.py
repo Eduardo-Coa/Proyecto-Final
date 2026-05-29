@@ -9,6 +9,7 @@ from src.repositories.phq9_mysql_repository import PHQ9MySQLRepository
 from src.services.email_service import EmailService
 from src.services.notificacion_decorator import NotificacionDecorator
 from src.services.phq9_business_service import PHQ9BusinessService
+from src.views.dashboard_view import DashboardView
 from src.views.phq9_view import PHQ9View
 
 
@@ -95,8 +96,9 @@ class AppController:
         # TODO (Ceni): SesionView
         self._agregar_placeholder(notebook, "Sesiones", "Ceni")
 
-        # TODO (equipo): Dashboard analítico
-        self._agregar_placeholder(notebook, "Dashboard", "equipo")
+        # Dashboard analítico (esqueleto de equipo; sección PHQ-9 funcional — Eduardo)
+        dashboard_view = DashboardView(notebook)
+        notebook.add(dashboard_view, text="Dashboard")
 
         self._root.mainloop()
 
