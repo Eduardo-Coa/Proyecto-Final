@@ -1,9 +1,6 @@
-"""Carga de datos desde MySQL para el dashboard analitico."""
-
 from __future__ import annotations
 
 import pandas as pd
-from mysql.connector import Error as MySQLError
 
 from src.exceptions.persistence_errors import ArchivoCorruptoError
 from src.repositories.db_config import obtener_conexion
@@ -13,14 +10,15 @@ def cargar_phq9() -> pd.DataFrame:
     """Carga los cuestionarios PHQ-9 desde MySQL como DataFrame.
 
     Incluye la columna ``programa`` mediante un LEFT JOIN con la tabla de
-    estudiantes, de modo que el dashboard pueda filtrar por programa academico.
+    estudiantes, de modo que el dashboard pueda filtrar por programa académico.
+    Los cuestionarios sin estudiante asociado conservan ``programa`` nulo.
 
     Returns:
-        DataFrame con columnas de cuestionarios PHQ-9 mas ``programa``.
+        DataFrame con las columnas de cuestionarios_phq9 más ``programa``.
+        DataFrame vacío si no hay registros.
 
     Raises:
-        ArchivoCorruptoError: si falla la consulta a MySQL.
-        PersistenceError: si falla la conexion configurada.
+        ArchivoCorruptoError: si falla la conexión o la consulta a MySQL.
     """
     sql = (
         "SELECT q.id, q.codigo_estudiante, q.respuestas, q.puntaje_total, "
@@ -28,39 +26,41 @@ def cargar_phq9() -> pd.DataFrame:
         "FROM cuestionarios_phq9 q "
         "LEFT JOIN estudiantes e ON q.codigo_estudiante = e.codigo"
     )
-    conexion = obtener_conexion()
+    try:
+        conexion = obtener_conexion()
+    except Exception as e:
+        raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
     try:
         cursor = conexion.cursor(dictionary=True)
         cursor.execute(sql)
         filas = cursor.fetchall()
         cursor.close()
-    except MySQLError as exc:
-        raise ArchivoCorruptoError(f"Error al leer PHQ-9 de MySQL: {exc}.") from exc
+    except Exception as e:
+        raise ArchivoCorruptoError(f"Error al leer PHQ-9 de MySQL: {e}.")
     finally:
         conexion.close()
     return pd.DataFrame(filas)
 
 
-def cargar_evolucion_sesiones() -> pd.DataFrame:
-    """Carga puntajes clinicos de estudiantes con sesiones de seguimiento.
+def cargar_sesiones() -> pd.DataFrame:
+    """Carga puntajes de estudiantes con sesiones de seguimiento desde MySQL.
 
-    La consulta toma los estudiantes que tienen al menos una sesion registrada
-    y reune sus puntajes PHQ-9 y GAD-7 en una sola serie temporal. El dashboard
-    usa estos datos para mostrar la evolucion promedio del grupo atendido.
+    Reune puntajes PHQ-9 y GAD-7 de estudiantes que tienen al menos una sesion
+    registrada. Incluye ``programa`` mediante LEFT JOIN con estudiantes para
+    mantener el filtro del dashboard.
 
     Returns:
-        DataFrame con ``instrumento``, ``codigo_estudiante``, ``puntaje_total``,
-        ``fecha_aplicacion`` y ``programa``.
+        DataFrame con instrumento, codigo_estudiante, puntaje_total,
+        fecha_aplicacion y programa. DataFrame vacio si no hay registros.
 
     Raises:
-        ArchivoCorruptoError: si falla la consulta a MySQL.
-        PersistenceError: si falla la conexion configurada.
+        ArchivoCorruptoError: si falla la conexion o la consulta a MySQL.
     """
     sql = (
         "SELECT 'PHQ-9' AS instrumento, q.codigo_estudiante, q.puntaje_total, "
         "q.fecha_aplicacion, e.programa "
         "FROM cuestionarios_phq9 q "
-        "INNER JOIN estudiantes e ON q.codigo_estudiante = e.codigo "
+        "LEFT JOIN estudiantes e ON q.codigo_estudiante = e.codigo "
         "WHERE EXISTS ("
         "    SELECT 1 FROM sesiones_seguimiento s "
         "    WHERE s.codigo_estudiante = q.codigo_estudiante"
@@ -69,38 +69,42 @@ def cargar_evolucion_sesiones() -> pd.DataFrame:
         "SELECT 'GAD-7' AS instrumento, q.codigo_estudiante, q.puntaje_total, "
         "q.fecha_aplicacion, e.programa "
         "FROM cuestionarios_gad7 q "
-        "INNER JOIN estudiantes e ON q.codigo_estudiante = e.codigo "
+        "LEFT JOIN estudiantes e ON q.codigo_estudiante = e.codigo "
         "WHERE EXISTS ("
         "    SELECT 1 FROM sesiones_seguimiento s "
         "    WHERE s.codigo_estudiante = q.codigo_estudiante"
         ") "
         "ORDER BY fecha_aplicacion"
     )
-    conexion = obtener_conexion()
+    try:
+        conexion = obtener_conexion()
+    except Exception as e:
+        raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
     try:
         cursor = conexion.cursor(dictionary=True)
         cursor.execute(sql)
         filas = cursor.fetchall()
         cursor.close()
-    except MySQLError as exc:
-        mensaje = f"Error al leer evolucion de sesiones de MySQL: {exc}."
-        raise ArchivoCorruptoError(mensaje) from exc
+    except Exception as e:
+        raise ArchivoCorruptoError(f"Error al leer sesiones de MySQL: {e}.")
     finally:
         conexion.close()
     return pd.DataFrame(filas)
 
 
 def listar_programas() -> list[str]:
-    """Retorna los programas academicos distintos registrados.
+    """Retorna los programas académicos distintos registrados en estudiantes.
 
     Returns:
-        Lista ordenada de nombres de programa.
+        Lista ordenada de nombres de programa. Lista vacía si no hay datos.
 
     Raises:
-        ArchivoCorruptoError: si falla la consulta a MySQL.
-        PersistenceError: si falla la conexion configurada.
+        ArchivoCorruptoError: si falla la conexión o la consulta a MySQL.
     """
-    conexion = obtener_conexion()
+    try:
+        conexion = obtener_conexion()
+    except Exception as e:
+        raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
     try:
         cursor = conexion.cursor()
         cursor.execute(
@@ -109,8 +113,8 @@ def listar_programas() -> list[str]:
         )
         filas = cursor.fetchall()
         cursor.close()
-    except MySQLError as exc:
-        raise ArchivoCorruptoError(f"Error al leer programas de MySQL: {exc}.") from exc
+    except Exception as e:
+        raise ArchivoCorruptoError(f"Error al leer programas de MySQL: {e}.")
     finally:
         conexion.close()
     return [fila[0] for fila in filas]

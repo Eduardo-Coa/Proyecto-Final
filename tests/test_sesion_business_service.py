@@ -5,7 +5,7 @@ import pytest
 from src.exceptions.business_errors import HorarioFueraDeRangoError, SesionDuplicadaError
 from src.models.sesion_seguimiento import SesionSeguimiento
 from src.services.sesion_business_service import SesionBusinessService
-from src.services.sesion_repository import SesionRepository
+from src.repositories.sesion_repository import SesionRepository
 
 
 def test_agendar_sesion_valida_y_persistida(tmp_path) -> None:
