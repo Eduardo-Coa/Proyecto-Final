@@ -23,6 +23,8 @@ htmlcov/
 # Agent local configuration
 .claude/
 .codex/
+AGENTS.md
+.codex-instructions.md
 
 # Data (decidir si commitearla o no)
 # data/*.json
