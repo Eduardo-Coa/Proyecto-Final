@@ -8,10 +8,6 @@ numpy>=1.24.0
 matplotlib>=3.7.0
 seaborn>=0.12.0
 
-# Machine Learning
-scikit-learn>=1.3.0
-joblib>=1.3.0
-
 # Base de datos y entorno
 mysql-connector-python>=9.0.0
 python-dotenv>=1.0.0
