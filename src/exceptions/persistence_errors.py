@@ -24,3 +24,10 @@ class ArchivoCorruptoError(PersistenceError):
 
     def __init__(self, mensaje: str = "Archivo de datos corrupto.") -> None:
         super().__init__(mensaje, codigo_error="PER003")
+
+
+class DatabaseConnectionError(PersistenceError):
+    """No se pudo establecer conexion con la base de datos."""
+
+    def __init__(self, mensaje: str = "Error de conexion a la base de datos.") -> None:
+        super().__init__(mensaje, codigo_error="PER004")

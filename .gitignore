@@ -27,7 +27,9 @@ htmlcov/
 .env
 credenciales.json
 
-# Archivos de agentes IA (instrucciones locales, no se comparten en el repo)
+# Archivos de agentes IA (instrucciones/config local, no se comparten en el repo)
 .claude/
+.codex/
 AGENTS.md
 CLAUDE.md
+.codex-instructions.md
