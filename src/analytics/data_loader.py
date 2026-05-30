@@ -42,6 +42,36 @@ def cargar_phq9() -> pd.DataFrame:
     return pd.DataFrame(filas)
 
 
+def cargar_estudiantes() -> pd.DataFrame:
+    """Carga los estudiantes desde MySQL como DataFrame.
+
+    Returns:
+        DataFrame con los datos demográficos de la tabla ``estudiantes``.
+        DataFrame vacío si no hay registros.
+
+    Raises:
+        ArchivoCorruptoError: si falla la conexión o la consulta a MySQL.
+    """
+    sql = (
+        "SELECT codigo, nombre_completo, edad, semestre, correo, programa, "
+        "fecha_registro FROM estudiantes"
+    )
+    try:
+        conexion = obtener_conexion()
+    except Exception as e:
+        raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
+    try:
+        cursor = conexion.cursor(dictionary=True)
+        cursor.execute(sql)
+        filas = cursor.fetchall()
+        cursor.close()
+    except Exception as e:
+        raise ArchivoCorruptoError(f"Error al leer estudiantes de MySQL: {e}.")
+    finally:
+        conexion.close()
+    return pd.DataFrame(filas)
+
+
 def listar_programas() -> list[str]:
     """Retorna los programas académicos distintos registrados en estudiantes.
 

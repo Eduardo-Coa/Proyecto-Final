@@ -6,9 +6,9 @@ from tkinter import ttk
 import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from src.analytics.data_loader import cargar_phq9, listar_programas
+from src.analytics.data_loader import cargar_estudiantes, cargar_phq9, listar_programas
 from src.analytics.descriptive_stats import kpis_phq9
-from src.analytics.visualizations import grafica_severidad_phq9
+from src.analytics.visualizations import grafica_demografica, grafica_severidad_phq9
 from src.exceptions.persistence_errors import PersistenceError
 
 _TODOS = "Todos los programas"
@@ -27,7 +27,9 @@ class DashboardView(ttk.Frame):
 
     def __init__(self, parent: tk.Widget) -> None:
         super().__init__(parent)
+        self._df_estudiantes: pd.DataFrame = pd.DataFrame()
         self._df_phq9: pd.DataFrame = pd.DataFrame()
+        self._canvas_demografica: FigureCanvasTkAgg | None = None
         self._canvas_phq9: FigureCanvasTkAgg | None = None
         self._kpi_labels: dict[str, ttk.Label] = {}
         self._construir_ui()
@@ -82,7 +84,12 @@ class DashboardView(ttk.Frame):
             grid.columnconfigure(i, weight=1)
             grid.rowconfigure(i, weight=1)
 
-        self._placeholder(grid, 0, 0, "Distribución demográfica", "Alejandro")
+        self._frame_demografica = ttk.LabelFrame(
+            grid, text="Distribución demográfica — Alejandro", padding=4
+        )
+        self._frame_demografica.grid(row=0, column=0, sticky="nsew", padx=4, pady=4)
+        self._frame_demografica.columnconfigure(0, weight=1)
+        self._frame_demografica.rowconfigure(0, weight=1)
 
         self._frame_phq9 = ttk.LabelFrame(grid, text="PHQ-9 — Eduardo", padding=4)
         self._frame_phq9.grid(row=0, column=1, sticky="nsew", padx=4, pady=4)
@@ -106,6 +113,7 @@ class DashboardView(ttk.Frame):
 
     def _refrescar(self) -> None:
         try:
+            self._df_estudiantes = cargar_estudiantes()
             self._df_phq9 = cargar_phq9()
             programas = listar_programas()
         except PersistenceError as e:
@@ -123,11 +131,13 @@ class DashboardView(ttk.Frame):
 
     def _actualizar_vista(self) -> None:
         df = self._filtrar(self._df_phq9)
+        df_estudiantes = self._filtrar(self._df_estudiantes)
         kpis = kpis_phq9(df)
         self._kpi_labels["total"].config(text=str(kpis["total"]))
         self._kpi_labels["promedio"].config(text=str(kpis["promedio"]))
         self._kpi_labels["mediana"].config(text=str(kpis["mediana"]))
         self._kpi_labels["pct_severo"].config(text=f"{kpis['pct_severo']}%")
+        self._dibujar_demografica(df_estudiantes)
         self._dibujar_phq9(df)
 
     def _filtrar(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -145,6 +155,16 @@ class DashboardView(ttk.Frame):
         self._canvas_phq9 = FigureCanvasTkAgg(figura, master=self._frame_phq9)
         self._canvas_phq9.draw()
         self._canvas_phq9.get_tk_widget().grid(row=0, column=0, sticky="nsew")
+
+    def _dibujar_demografica(self, df: pd.DataFrame) -> None:
+        if self._canvas_demografica is not None:
+            self._canvas_demografica.get_tk_widget().destroy()
+        figura = grafica_demografica(df)
+        self._canvas_demografica = FigureCanvasTkAgg(
+            figura, master=self._frame_demografica
+        )
+        self._canvas_demografica.draw()
+        self._canvas_demografica.get_tk_widget().grid(row=0, column=0, sticky="nsew")
 
     def _mostrar_estado(self, mensaje: str, color: str) -> None:
         self._lbl_estado.config(text=mensaje, foreground=color)
