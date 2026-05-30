@@ -54,8 +54,7 @@ class GAD7BusinessService:
                 self._alerta_repo.crear(alerta)
                 self._notificar_comorbilidad(cuestionario, alerta)
                 raise RiesgoSeveroError(
-                    f"Comorbilidad detectada: GAD-7={cuestionario.puntaje_total} "
-                    f"con PHQ-9 severo reciente. Alerta generada."
+                    cuestionario.puntaje_total, PUNTAJE_RIESGO_SEVERO_GAD7
                 )
             alerta = AlertaRiesgo(
                 codigo_estudiante=cuestionario.codigo_estudiante,

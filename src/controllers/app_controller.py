@@ -4,12 +4,21 @@ import tkinter as tk
 from tkinter import ttk
 
 from src.controllers.gad7_controller import GAD7Controller
+from src.controllers.phq9_controller import PHQ9Controller
+from src.controllers.sesion_controller import SesionController
 from src.repositories.db_config import obtener_conexion
 from src.repositories.gad7_mysql_repository import GAD7MySQLRepository
+from src.repositories.phq9_mysql_repository import PHQ9MySQLRepository
+from src.repositories.sesion_mysql_repository import SesionMySQLRepository
 from src.services.email_service import EmailService
 from src.services.gad7_business_service import GAD7BusinessService
 from src.services.notificacion_decorator import NotificacionDecorator
+from src.services.phq9_business_service import PHQ9BusinessService
+from src.services.sesion_business_service import SesionBusinessService
+from src.views.dashboard_view import DashboardView
 from src.views.gad7_view import GAD7View
+from src.views.phq9_view import PHQ9View
+from src.views.sesion_view import SesionView
 
 
 class AppController:
@@ -22,11 +31,10 @@ class AppController:
         3. Lanzar el mainloop de Tkinter.
 
     No contiene lógica de negocio: solo orquesta. Cada integrante conecta
-    su parte aquí (ver TODOs).
+    su parte aquí.
     """
 
     def __init__(self) -> None:
-        self._conexion_db = obtener_conexion()
         self._construir_servicios_compartidos()
         self._construir_repositorios()
         self._construir_business_services()
@@ -35,50 +43,49 @@ class AppController:
     # ─────────────────────────── Capas ───────────────────────────────────
 
     def _construir_servicios_compartidos(self) -> None:
-        """Servicios usados por más de un BusinessService (Email, Alertas)."""
+        """EmailService (modo simulación), AlertaRepository stub y conexión MySQL."""
         self._email_service = EmailService(modo_simulacion=True)
-
-        # TODO (equipo): cuando se implemente src.repositories.alerta_repository.AlertaRepository,
-        # reemplazar este stub por: AlertaRepository()
         self._alerta_repo = _AlertaRepoStub()
+        self._conexion_db = obtener_conexion()
 
     def _construir_repositorios(self) -> None:
-        """Una entidad CRUD por integrante."""
-        # TODO (Alejandro): from src.repositories.estudiante_repository import EstudianteRepository
-        # self._estudiante_repo = EstudianteRepository()
-
-        # TODO (Eduardo): from src.repositories.phq9_repository import PHQ9Repository
-        # self._phq9_repo = PHQ9Repository()
-        self._phq9_repo = _PHQ9RepoStub()  # temporal hasta que Eduardo agregue su repo
-
-        # Diunis — GAD7 (MySQL) envuelto en NotificacionDecorator (patrón GoF, criterio 7)
-        # Para volver a JSON local: usar GAD7JsonRepository(Path("data/cuestionarios_gad7.json"))
-        repo_base = GAD7MySQLRepository(self._conexion_db)
+        """Repositorios MySQL envueltos en NotificacionDecorator (patrón GoF, criterio 7)."""
+        # Eduardo — PHQ-9
+        repo_phq9 = PHQ9MySQLRepository(self._conexion_db)
+        self._phq9_repo = NotificacionDecorator(
+            repositorio=repo_phq9,
+            email_service=self._email_service,
+            destinatario="bienestar@uni.edu",
+            nombre_entidad="PHQ-9",
+        )
+        # Ceni — Sesiones
+        repo_sesion = SesionMySQLRepository(self._conexion_db)
+        self._sesion_repo = NotificacionDecorator(
+            repositorio=repo_sesion,
+            email_service=self._email_service,
+            destinatario="bienestar@uni.edu",
+            nombre_entidad="Sesion",
+        )
+        # Diunis — GAD-7
+        repo_gad7 = GAD7MySQLRepository(self._conexion_db)
         self._gad7_repo = NotificacionDecorator(
-            repositorio=repo_base,
+            repositorio=repo_gad7,
             email_service=self._email_service,
             destinatario="bienestar@uni.edu",
             nombre_entidad="GAD-7",
         )
-
-        # TODO (Ceni): from src.repositories.sesion_repository import SesionRepository
-        # self._sesion_repo = SesionRepository()
-
-        # TODO (equipo): envolver los 4 repositorios CRUD con NotificacionDecorator
-        # cuando se implemente (criterio 7 del proyecto).
-        # Ejemplo:
-        #   self._gad7_repo = NotificacionDecorator(
-        #       self._gad7_repo, self._email_service,
-        #       "bienestar@uni.edu", "GAD-7"
-        #   )
+        # TODO (Alejandro): self._estudiante_repo = EstudianteRepository()
 
     def _construir_business_services(self) -> None:
         """Reglas de negocio por integrante."""
-        # TODO (Alejandro): EstudianteBusinessService — si aplica
-        # TODO (Eduardo): PHQ9BusinessService(self._alerta_repo, self._email_service)
-        # TODO (Ceni): SesionBusinessService(self._sesion_repo, self._phq9_repo, self._gad7_repo)
-
-        # Diunis — GAD7
+        # Eduardo — PHQ-9
+        self._phq9_business = PHQ9BusinessService(
+            alerta_repo=self._alerta_repo,
+            email_service=self._email_service,
+        )
+        # Ceni — Sesiones
+        self._sesion_business = SesionBusinessService(sesion_repo=self._sesion_repo)
+        # Diunis — GAD-7 (comorbilidad: necesita PHQ-9 reciente del estudiante)
         self._gad7_business = GAD7BusinessService(
             phq9_repo=self._phq9_repo,
             alerta_repo=self._alerta_repo,
@@ -87,15 +94,22 @@ class AppController:
 
     def _construir_controllers(self) -> None:
         """Un controller específico por entidad."""
-        # TODO (Alejandro): self._estudiante_controller = EstudianteController(...)
-        # TODO (Eduardo): self._phq9_controller = PHQ9Controller(...)
-        # TODO (Ceni): self._sesion_controller = SesionController(...)
-
-        # Diunis — GAD7
+        # Eduardo — PHQ-9
+        self._phq9_controller = PHQ9Controller(
+            repositorio=self._phq9_repo,
+            business_service=self._phq9_business,
+        )
+        # Ceni — Sesiones
+        self._sesion_controller = SesionController(
+            repositorio=self._sesion_repo,
+            business_service=self._sesion_business,
+        )
+        # Diunis — GAD-7
         self._gad7_controller = GAD7Controller(
             repositorio=self._gad7_repo,
             business_service=self._gad7_business,
         )
+        # TODO (Alejandro): self._estudiante_controller = EstudianteController(...)
 
     # ─────────────────────────── Menú principal ──────────────────────────
 
@@ -108,33 +122,29 @@ class AppController:
         notebook = ttk.Notebook(self._root)
         notebook.pack(fill="both", expand=True, padx=8, pady=8)
 
-        # TODO (Alejandro): reemplazar el placeholder por EstudianteView
-        # estudiante_view = EstudianteView(notebook, self._estudiante_controller)
-        # notebook.add(estudiante_view, text="Estudiantes")
+        # TODO (Alejandro): EstudianteView
         self._agregar_placeholder(notebook, "Estudiantes", "Alejandro")
 
-        # TODO (Eduardo): reemplazar el placeholder por PHQ9View
-        # phq9_view = PHQ9View(notebook, self._phq9_controller)
-        # notebook.add(phq9_view, text="PHQ-9")
-        self._agregar_placeholder(notebook, "PHQ-9", "Eduardo")
+        # Eduardo — PHQ-9 (funcional)
+        phq9_view = PHQ9View(notebook, self._phq9_controller)
+        notebook.add(phq9_view, text="PHQ-9")
 
-        # Diunis — pestaña GAD-7 (funcional)
+        # Diunis — GAD-7 (funcional)
         gad7_view = GAD7View(notebook, self._gad7_controller)
         notebook.add(gad7_view, text="GAD-7")
 
-        # TODO (Ceni): reemplazar el placeholder por SesionView
-        # sesion_view = SesionView(notebook, self._sesion_controller)
-        # notebook.add(sesion_view, text="Sesiones")
-        self._agregar_placeholder(notebook, "Sesiones", "Ceni")
+        # Ceni — Sesiones (funcional)
+        sesion_view = SesionView(notebook, self._sesion_controller)
+        notebook.add(sesion_view, text="Sesiones")
 
-        # TODO (equipo): pestaña Dashboard analítico (analytics + ml)
-        self._agregar_placeholder(notebook, "Dashboard", "equipo (analytics)")
+        # Dashboard analítico (esqueleto de equipo; sección PHQ-9 funcional — Eduardo)
+        dashboard_view = DashboardView(notebook)
+        notebook.add(dashboard_view, text="Dashboard")
 
         self._root.mainloop()
 
     def _agregar_placeholder(self, notebook: ttk.Notebook, nombre: str,
                              responsable: str) -> None:
-        """Crea una pestaña vacía con un mensaje informativo."""
         frame = ttk.Frame(notebook)
         ttk.Label(
             frame,
@@ -146,24 +156,9 @@ class AppController:
 
 
 # ─────────────────────────── Stubs temporales ────────────────────────────
-# Estas clases existen solo para que la app arranque sin todas las piezas.
-# Cada una debe ser reemplazada por su implementación real cuando esté lista.
-
 
 class _AlertaRepoStub:
-    """Stub temporal de AlertaRepository — solo imprime en consola."""
+    """Stub de AlertaRepository — imprime en consola hasta que se implemente el real."""
 
     def crear(self, alerta) -> None:
-        print(f"[ALERTA SIMULADA] tipo={alerta.tipo.value} estudiante={alerta.codigo_estudiante}")
-
-
-class _PHQ9RepoStub:
-    """Stub temporal de PHQ9Repository — siempre retorna lista vacía.
-
-    Sin un PHQ-9 severo reciente, la regla de comorbilidad de GAD7BusinessService
-    nunca se dispara, así que las alertas serán solo ANSIEDAD_SEVERA o NORMAL.
-    Cuando Eduardo conecte el repo real, la regla completa funcionará.
-    """
-
-    def buscar_por_estudiante(self, codigo_estudiante: str) -> list:
-        return []
+        print(f"[ALERTA] tipo={alerta.tipo.value} estudiante={alerta.codigo_estudiante}")

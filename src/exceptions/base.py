@@ -3,15 +3,15 @@ class PlataformaError(Exception):
 
     Args:
         mensaje: descripción del error.
-        codigo: código identificador del error (ej. VAL001).
+        codigo_error: código identificador del error (ej. VAL001).
     """
 
-    def __init__(self, mensaje: str, codigo: str = "") -> None:
+    def __init__(self, mensaje: str, codigo_error: str | None = None) -> None:
         super().__init__(mensaje)
         self.mensaje = mensaje
-        self.codigo = codigo
+        self.codigo_error = codigo_error
 
     def __str__(self) -> str:
-        if self.codigo:
-            return f"[{self.codigo}] {self.mensaje}"
+        if self.codigo_error:
+            return f"[{self.codigo_error}] {self.mensaje}"
         return self.mensaje

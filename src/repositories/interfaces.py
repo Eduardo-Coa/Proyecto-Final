@@ -37,7 +37,6 @@ class IRepository(ABC, Generic[T]):
         """Retorna todas las entidades asociadas a un estudiante.
 
         Implementación opcional: por defecto retorna lista vacía.
-        Los repositorios cuyas entidades tienen 'codigo_estudiante' (GAD7, PHQ9,
-        Sesion) deben sobreescribir este método.
+        Los repositorios de PHQ9, GAD7 y Sesion deben sobreescribir este método.
         """
         return []

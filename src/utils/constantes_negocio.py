@@ -1,3 +1,5 @@
+"""Constantes de negocio compartidas por la plataforma psicoeducativa."""
+
 # PHQ-9 (depresión) — rango 0 a 27
 PUNTAJE_MAXIMO_PHQ9 = 27
 PUNTAJE_RIESGO_SEVERO_PHQ9 = 20
@@ -21,11 +23,12 @@ NUM_ITEMS_GAD7 = 7
 EDAD_MINIMA = 16
 SEMESTRE_MINIMO = 1
 SEMESTRE_MAXIMO = 12
+LONGITUD_MINIMA_CODIGO = 4
 
 # Sesiones
 HORA_INICIO_ATENCION = 8
 HORA_FIN_ATENCION = 18
-DURACION_MIN_SESION = 30
+DURACION_MINIMA_SESION = 15
 DURACION_MAX_SESION = 120
 
 # Reglas de negocio

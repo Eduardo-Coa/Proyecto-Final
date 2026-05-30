@@ -15,14 +15,11 @@ class NotificacionDecorator(IRepository[T], Generic[T]):
     crear/actualizar exitoso, dispara un correo al destinatario configurado.
     El resto de operaciones (listar, buscar, eliminar) se delegan tal cual.
 
-    Implementa el patrón Decorator por composición (no herencia), envolviendo
-    el repositorio en lugar de extenderlo.
-
     Args:
         repositorio: instancia concreta de IRepository (la que se envuelve).
         email_service: servicio de correo que realiza el envío.
         destinatario: dirección que recibirá las notificaciones.
-        nombre_entidad: nombre humano de la entidad (ej. 'GAD-7'), para los asuntos.
+        nombre_entidad: nombre humano de la entidad (ej. 'PHQ-9'), para los asuntos.
     """
 
     def __init__(
