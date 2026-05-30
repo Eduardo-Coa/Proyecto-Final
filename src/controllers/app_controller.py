@@ -3,13 +3,16 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from src.controllers.estudiante_controller import EstudianteController
 from src.controllers.phq9_controller import PHQ9Controller
 from src.repositories.db_config import obtener_conexion
+from src.repositories.estudiante_mysql_repository import EstudianteMySQLRepository
 from src.repositories.phq9_mysql_repository import PHQ9MySQLRepository
 from src.services.email_service import EmailService
 from src.services.notificacion_decorator import NotificacionDecorator
 from src.services.phq9_business_service import PHQ9BusinessService
 from src.views.dashboard_view import DashboardView
+from src.views.estudiante_view import EstudianteView
 from src.views.phq9_view import PHQ9View
 
 
@@ -42,6 +45,14 @@ class AppController:
     def _construir_repositorios(self) -> None:
         """Eduardo — PHQ-9 (MySQL) envuelto en NotificacionDecorator (patrón GoF)."""
         self._conexion_db = obtener_conexion()
+        estudiante_repo_base = EstudianteMySQLRepository(self._conexion_db)
+        self._estudiante_repo = NotificacionDecorator(
+            repositorio=estudiante_repo_base,
+            email_service=self._email_service,
+            destinatario="bienestar@uni.edu",
+            nombre_entidad="Estudiante",
+        )
+
         repo_base = PHQ9MySQLRepository(self._conexion_db)
         self._phq9_repo = NotificacionDecorator(
             repositorio=repo_base,
@@ -49,7 +60,6 @@ class AppController:
             destinatario="bienestar@uni.edu",
             nombre_entidad="PHQ-9",
         )
-        # TODO (Alejandro): self._estudiante_repo = EstudianteRepository()
         # TODO (Diunis):    self._gad7_repo = GAD7JsonRepository(...)
         # TODO (Ceni):      self._sesion_repo = SesionRepository()
 
@@ -64,11 +74,13 @@ class AppController:
 
     def _construir_controllers(self) -> None:
         """Eduardo — PHQ-9. Los demás integrantes agregarán sus controladores aquí."""
+        self._estudiante_controller = EstudianteController(
+            repositorio=self._estudiante_repo,
+        )
         self._phq9_controller = PHQ9Controller(
             repositorio=self._phq9_repo,
             business_service=self._phq9_business,
         )
-        # TODO (Alejandro): self._estudiante_controller = EstudianteController(...)
         # TODO (Diunis):    self._gad7_controller = GAD7Controller(...)
         # TODO (Ceni):      self._sesion_controller = SesionController(...)
 
@@ -83,8 +95,9 @@ class AppController:
         notebook = ttk.Notebook(self._root)
         notebook.pack(fill="both", expand=True, padx=8, pady=8)
 
-        # TODO (Alejandro): EstudianteView
-        self._agregar_placeholder(notebook, "Estudiantes", "Alejandro")
+        # Alejandro — Estudiantes (funcional)
+        estudiante_view = EstudianteView(notebook, self._estudiante_controller)
+        notebook.add(estudiante_view, text="Estudiantes")
 
         # Eduardo — PHQ-9 (funcional)
         phq9_view = PHQ9View(notebook, self._phq9_controller)
