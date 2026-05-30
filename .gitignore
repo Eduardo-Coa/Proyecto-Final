@@ -20,6 +20,10 @@ htmlcov/
 *.swp
 .DS_Store
 
+# Configuración de agentes (no versionar)
+.claude/
+CLAUDE.md
+
 # Data (decidir si commitearla o no)
 # data/*.json
 
