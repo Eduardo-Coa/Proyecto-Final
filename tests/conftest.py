@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.models.cuestionario_phq9 import CuestionarioPHQ9
+from src.repositories.estudiante_json_repository import EstudianteJsonRepository
 from src.services.phq9_business_service import PHQ9BusinessService
 
 
@@ -82,4 +83,16 @@ def phq9_repo_mock() -> MagicMock:
 @pytest.fixture
 def gad7_repo_mock() -> MagicMock:
     """Mock del GAD7Repository."""
+    return MagicMock()
+
+
+@pytest.fixture
+def repo_json(tmp_path) -> EstudianteJsonRepository:
+    """Repositorio JSON temporal para pruebas de Estudiante."""
+    return EstudianteJsonRepository(tmp_path / "estudiantes.json")
+
+
+@pytest.fixture
+def estudiante_repo_mock() -> MagicMock:
+    """Mock del repositorio de Estudiante."""
     return MagicMock()
