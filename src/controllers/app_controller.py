@@ -4,16 +4,24 @@ import tkinter as tk
 from tkinter import ttk
 
 from src.controllers.estudiante_controller import EstudianteController
+from src.controllers.gad7_controller import GAD7Controller
 from src.controllers.phq9_controller import PHQ9Controller
+from src.controllers.sesion_controller import SesionController
 from src.repositories.db_config import obtener_conexion
 from src.repositories.estudiante_mysql_repository import EstudianteMySQLRepository
+from src.repositories.gad7_mysql_repository import GAD7MySQLRepository
 from src.repositories.phq9_mysql_repository import PHQ9MySQLRepository
+from src.repositories.sesion_mysql_repository import SesionMySQLRepository
 from src.services.email_service import EmailService
+from src.services.gad7_business_service import GAD7BusinessService
 from src.services.notificacion_decorator import NotificacionDecorator
 from src.services.phq9_business_service import PHQ9BusinessService
+from src.services.sesion_business_service import SesionBusinessService
 from src.views.dashboard_view import DashboardView
 from src.views.estudiante_view import EstudianteView
+from src.views.gad7_view import GAD7View
 from src.views.phq9_view import PHQ9View
+from src.views.sesion_view import SesionView
 
 
 class AppController:
@@ -38,51 +46,91 @@ class AppController:
     # ─────────────────────────── Capas ───────────────────────────────────
 
     def _construir_servicios_compartidos(self) -> None:
-        """Servicios compartidos: EmailService real (modo simulación) y AlertaRepository stub."""
+        """EmailService (modo simulación), AlertaRepository stub y conexión MySQL."""
         self._email_service = EmailService(modo_simulacion=True)
         self._alerta_repo = _AlertaRepoStub()
+        self._conexion_db = obtener_conexion()
 
     def _construir_repositorios(self) -> None:
-        """Eduardo — PHQ-9 (MySQL) envuelto en NotificacionDecorator (patrón GoF)."""
-        self._conexion_db = obtener_conexion()
-        estudiante_repo_base = EstudianteMySQLRepository(self._conexion_db)
+        """Repositorios MySQL envueltos en NotificacionDecorator (patrón GoF)."""
+        # Alejandro — Estudiantes
+        repo_estudiante = EstudianteMySQLRepository(self._conexion_db)
         self._estudiante_repo = NotificacionDecorator(
-            repositorio=estudiante_repo_base,
+            repositorio=repo_estudiante,
             email_service=self._email_service,
             destinatario="bienestar@uni.edu",
             nombre_entidad="Estudiante",
         )
 
-        repo_base = PHQ9MySQLRepository(self._conexion_db)
+        # Eduardo — PHQ-9
+        repo_phq9 = PHQ9MySQLRepository(self._conexion_db)
         self._phq9_repo = NotificacionDecorator(
-            repositorio=repo_base,
+            repositorio=repo_phq9,
             email_service=self._email_service,
             destinatario="bienestar@uni.edu",
             nombre_entidad="PHQ-9",
         )
-        # TODO (Diunis):    self._gad7_repo = GAD7JsonRepository(...)
-        # TODO (Ceni):      self._sesion_repo = SesionRepository()
+
+        # Ceni — Sesiones
+        repo_sesion = SesionMySQLRepository(self._conexion_db)
+        self._sesion_repo = NotificacionDecorator(
+            repositorio=repo_sesion,
+            email_service=self._email_service,
+            destinatario="bienestar@uni.edu",
+            nombre_entidad="Sesion",
+        )
+
+        # Diunis — GAD-7
+        repo_gad7 = GAD7MySQLRepository(self._conexion_db)
+        self._gad7_repo = NotificacionDecorator(
+            repositorio=repo_gad7,
+            email_service=self._email_service,
+            destinatario="bienestar@uni.edu",
+            nombre_entidad="GAD-7",
+        )
 
     def _construir_business_services(self) -> None:
-        """Eduardo — PHQ-9. Los demás integrantes agregarán sus servicios aquí."""
+        """Reglas de negocio por integrante."""
+        # Eduardo — PHQ-9
         self._phq9_business = PHQ9BusinessService(
             alerta_repo=self._alerta_repo,
             email_service=self._email_service,
         )
-        # TODO (Diunis): self._gad7_business = GAD7BusinessService(...)
-        # TODO (Ceni):   self._sesion_business = SesionBusinessService(...)
+
+        # Ceni — Sesiones
+        self._sesion_business = SesionBusinessService(sesion_repo=self._sesion_repo)
+
+        # Diunis — GAD-7 (comorbilidad: necesita PHQ-9 reciente del estudiante)
+        self._gad7_business = GAD7BusinessService(
+            phq9_repo=self._phq9_repo,
+            alerta_repo=self._alerta_repo,
+            email_service=self._email_service,
+        )
 
     def _construir_controllers(self) -> None:
-        """Eduardo — PHQ-9. Los demás integrantes agregarán sus controladores aquí."""
+        """Un controller específico por entidad."""
+        # Alejandro — Estudiantes
         self._estudiante_controller = EstudianteController(
             repositorio=self._estudiante_repo,
         )
+
+        # Eduardo — PHQ-9
         self._phq9_controller = PHQ9Controller(
             repositorio=self._phq9_repo,
             business_service=self._phq9_business,
         )
-        # TODO (Diunis):    self._gad7_controller = GAD7Controller(...)
-        # TODO (Ceni):      self._sesion_controller = SesionController(...)
+
+        # Ceni — Sesiones
+        self._sesion_controller = SesionController(
+            repositorio=self._sesion_repo,
+            business_service=self._sesion_business,
+        )
+
+        # Diunis — GAD-7
+        self._gad7_controller = GAD7Controller(
+            repositorio=self._gad7_repo,
+            business_service=self._gad7_business,
+        )
 
     # ─────────────────────────── Menú principal ──────────────────────────
 
@@ -103,28 +151,19 @@ class AppController:
         phq9_view = PHQ9View(notebook, self._phq9_controller)
         notebook.add(phq9_view, text="PHQ-9")
 
-        # TODO (Diunis): GAD7View
-        self._agregar_placeholder(notebook, "GAD-7", "Diunis")
+        # Diunis — GAD-7 (funcional)
+        gad7_view = GAD7View(notebook, self._gad7_controller)
+        notebook.add(gad7_view, text="GAD-7")
 
-        # TODO (Ceni): SesionView
-        self._agregar_placeholder(notebook, "Sesiones", "Ceni")
+        # Ceni — Sesiones (funcional)
+        sesion_view = SesionView(notebook, self._sesion_controller)
+        notebook.add(sesion_view, text="Sesiones")
 
-        # Dashboard analítico (esqueleto de equipo; sección PHQ-9 funcional — Eduardo)
+        # Dashboard analítico del equipo.
         dashboard_view = DashboardView(notebook)
         notebook.add(dashboard_view, text="Dashboard")
 
         self._root.mainloop()
-
-    def _agregar_placeholder(self, notebook: ttk.Notebook, nombre: str,
-                             responsable: str) -> None:
-        frame = ttk.Frame(notebook)
-        ttk.Label(
-            frame,
-            text=f"Seccion '{nombre}' pendiente de implementacion por {responsable}",
-            font=("", 13),
-            foreground="gray",
-        ).pack(expand=True)
-        notebook.add(frame, text=nombre)
 
 
 # ─────────────────────────── Stubs temporales ────────────────────────────

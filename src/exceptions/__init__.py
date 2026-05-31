@@ -7,6 +7,8 @@ from src.exceptions.validation_errors import (
     CorreoInvalidoError,
     PuntajeInvalidoError,
     FechaInvalidaError,
+    CampoRequeridoError,
+    DuracionInvalidaError,
 )
 from src.exceptions.persistence_errors import (
     PersistenceError,

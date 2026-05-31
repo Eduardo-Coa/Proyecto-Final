@@ -32,3 +32,14 @@ README.md
 # Credenciales (NUNCA commitear)
 .env
 credenciales.json
+
+# Archivos de agentes IA (instrucciones/config local, no se comparten en el repo)
+.claude/
+.codex/
+AGENTS.md
+CLAUDE.md
+.codex-instructions.md
+
+# Archivos locales que no se versionan
+README.md
+.env.example

@@ -20,7 +20,7 @@ class EdadInvalidaError(ValidationError):
 
     def __init__(self, edad: int) -> None:
         super().__init__(
-            f"La edad {edad} no es válida. Debe ser ≥ 16 años.",
+            f"La edad {edad} no es válida. Debe ser >= 16 años.",
             codigo_error="VAL002",
         )
 
@@ -60,3 +60,23 @@ class FechaInvalidaError(ValidationError):
 
     def __init__(self, motivo: str) -> None:
         super().__init__(motivo, codigo_error="VAL006")
+
+
+class CampoRequeridoError(ValidationError):
+    """Un campo obligatorio no fue informado."""
+
+    def __init__(self, campo: str) -> None:
+        super().__init__(
+            f"El campo '{campo}' es obligatorio.",
+            codigo_error="VAL007",
+        )
+
+
+class DuracionInvalidaError(ValidationError):
+    """La duración de una sesión no cumple el mínimo permitido."""
+
+    def __init__(self, duracion: int, minimo: int) -> None:
+        super().__init__(
+            f"La duración {duracion} no es válida. Debe ser mayor o igual a {minimo} minutos.",
+            codigo_error="VAL008",
+        )

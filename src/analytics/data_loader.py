@@ -42,6 +42,42 @@ def cargar_phq9() -> pd.DataFrame:
     return pd.DataFrame(filas)
 
 
+def cargar_gad7() -> pd.DataFrame:
+    """Carga los cuestionarios GAD-7 desde MySQL como DataFrame.
+
+    Incluye la columna ``programa`` mediante un LEFT JOIN con la tabla de
+    estudiantes, de modo que el dashboard pueda filtrar por programa académico.
+    Los cuestionarios sin estudiante asociado conservan ``programa`` nulo.
+
+    Returns:
+        DataFrame con las columnas de cuestionarios_gad7 más ``programa``.
+        DataFrame vacío si no hay registros.
+
+    Raises:
+        ArchivoCorruptoError: si falla la conexión o la consulta a MySQL.
+    """
+    sql = (
+        "SELECT q.id, q.codigo_estudiante, q.respuestas, q.puntaje_total, "
+        "q.nivel_severidad, q.fecha_aplicacion, e.programa "
+        "FROM cuestionarios_gad7 q "
+        "LEFT JOIN estudiantes e ON q.codigo_estudiante = e.codigo"
+    )
+    try:
+        conexion = obtener_conexion()
+    except Exception as e:
+        raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
+    try:
+        cursor = conexion.cursor(dictionary=True)
+        cursor.execute(sql)
+        filas = cursor.fetchall()
+        cursor.close()
+    except Exception as e:
+        raise ArchivoCorruptoError(f"Error al leer GAD-7 de MySQL: {e}.")
+    finally:
+        conexion.close()
+    return pd.DataFrame(filas)
+
+
 def cargar_estudiantes() -> pd.DataFrame:
     """Carga los estudiantes desde MySQL como DataFrame.
 
