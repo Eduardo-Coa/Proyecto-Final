@@ -94,15 +94,14 @@ def cargar_estudiantes() -> pd.DataFrame:
         conexion = obtener_conexion()
     except Exception as e:
         raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
+    cursor = conexion.cursor(dictionary=True)
     try:
-        cursor = conexion.cursor(dictionary=True)
         cursor.execute(sql)
         filas = cursor.fetchall()
-        cursor.close()
     except Exception as e:
         raise ArchivoCorruptoError(f"Error al leer estudiantes de MySQL: {e}.")
     finally:
-        conexion.close()
+        cursor.close()
     return pd.DataFrame(filas)
 
 
