@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 
 _ENV_LOADED = False
+_CONEXION = None
 
 
 def _cargar_env() -> None:
@@ -27,7 +28,11 @@ def _cargar_env() -> None:
 
 
 def obtener_conexion() -> Any:
-    """Crea y retorna una conexión a MySQL usando las credenciales del .env.
+    """Retorna la conexión a MySQL reutilizando la activa (patrón Singleton).
+
+    Mantiene una única conexión a nivel de módulo: si ya existe y sigue
+    activa, la reutiliza; en caso contrario crea una nueva con las
+    credenciales del .env y la almacena para futuras llamadas.
 
     Returns:
         Objeto de conexión activo a MySQL.
@@ -36,11 +41,15 @@ def obtener_conexion() -> Any:
         FileNotFoundError: si no existe el archivo .env.
         mysql.connector.Error: si falla la conexión a MySQL.
     """
+    global _CONEXION
     _cargar_env()
-    return mysql.connector.connect(
+    if _CONEXION is not None and _CONEXION.is_connected():
+        return _CONEXION
+    _CONEXION = mysql.connector.connect(
         host=os.environ["MYSQL_HOST"],
         port=int(os.environ["MYSQL_PORT"]),
         user=os.environ["MYSQL_USER"],
         password=os.environ["MYSQL_PASSWORD"],
         database=os.environ["MYSQL_DATABASE"],
     )
+    return _CONEXION

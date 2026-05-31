@@ -30,15 +30,14 @@ def cargar_phq9() -> pd.DataFrame:
         conexion = obtener_conexion()
     except Exception as e:
         raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
+    cursor = conexion.cursor(dictionary=True)
     try:
-        cursor = conexion.cursor(dictionary=True)
         cursor.execute(sql)
         filas = cursor.fetchall()
-        cursor.close()
     except Exception as e:
         raise ArchivoCorruptoError(f"Error al leer PHQ-9 de MySQL: {e}.")
     finally:
-        conexion.close()
+        cursor.close()
     return pd.DataFrame(filas)
 
 
@@ -66,15 +65,14 @@ def cargar_gad7() -> pd.DataFrame:
         conexion = obtener_conexion()
     except Exception as e:
         raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
+    cursor = conexion.cursor(dictionary=True)
     try:
-        cursor = conexion.cursor(dictionary=True)
         cursor.execute(sql)
         filas = cursor.fetchall()
-        cursor.close()
     except Exception as e:
         raise ArchivoCorruptoError(f"Error al leer GAD-7 de MySQL: {e}.")
     finally:
-        conexion.close()
+        cursor.close()
     return pd.DataFrame(filas)
 
 
@@ -121,16 +119,15 @@ def listar_programas() -> list[str]:
         conexion = obtener_conexion()
     except Exception as e:
         raise ArchivoCorruptoError(f"No se pudo conectar a MySQL: {e}.")
+    cursor = conexion.cursor()
     try:
-        cursor = conexion.cursor()
         cursor.execute(
             "SELECT DISTINCT programa FROM estudiantes "
             "WHERE programa IS NOT NULL ORDER BY programa"
         )
         filas = cursor.fetchall()
-        cursor.close()
     except Exception as e:
         raise ArchivoCorruptoError(f"Error al leer programas de MySQL: {e}.")
     finally:
-        conexion.close()
+        cursor.close()
     return [fila[0] for fila in filas]
