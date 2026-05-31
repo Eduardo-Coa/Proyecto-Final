@@ -9,6 +9,7 @@ Cobertura:
 
 from __future__ import annotations
 
+from datetime import datetime
 from unittest.mock import MagicMock
 
 import pytest
@@ -26,6 +27,7 @@ from src.exceptions.validation_errors import (
     ValidationError,
 )
 from src.models.estudiante import Estudiante
+from src.repositories.estudiante_mysql_repository import EstudianteMySQLRepository
 from src.services.email_service import EmailService
 from src.services.notificacion_decorator import NotificacionDecorator
 
@@ -95,28 +97,50 @@ def test_modelo_rechaza_nombre_vacio_o_corto():
 # ─────────────────────── Regla de negocio (7-9) ──────────────────────────
 
 
-def test_regla_negocio_repo_lanza_duplicate_si_codigo_existente(repo_json):
-    """Regla del integrante 1: no pueden existir dos estudiantes con el mismo código."""
-    repo_json.crear(_estudiante_valido(codigo="EST0010"))
+def test_regla_negocio_repo_lanza_duplicate_si_codigo_existente(conexion_mock):
+    """Regla del integrante 1: no pueden existir dos estudiantes con el mismo código.
+
+    El repositorio MySQL traduce el error de clave duplicada de MySQL
+    ('Duplicate entry') en una DuplicateEntityError del dominio.
+    """
+    cursor = conexion_mock.cursor.return_value
+    cursor.execute.side_effect = Exception("1062 (23000): Duplicate entry 'EST0010'")
+    repo = EstudianteMySQLRepository(conexion_mock)
 
     with pytest.raises(DuplicateEntityError):
-        repo_json.crear(_estudiante_valido(codigo="EST0010", correo="otro@uni.edu.co"))
+        repo.crear(_estudiante_valido(codigo="EST0010"))
 
 
-def test_repo_persiste_y_recupera_estudiante(repo_json):
-    """El repositorio JSON persiste y recupera un estudiante correctamente."""
-    creado = repo_json.crear(_estudiante_valido(codigo="EST0020"))
-    recuperado = repo_json.buscar_por_codigo("EST0020")
+def test_repo_persiste_y_recupera_estudiante(conexion_mock):
+    """El repositorio MySQL persiste (crear) y recupera (buscar_por_codigo) un estudiante."""
+    cursor = conexion_mock.cursor.return_value
+    cursor.fetchone.return_value = {
+        "codigo": "EST0020",
+        "nombre_completo": "Alejandro Pérez García",
+        "edad": 20,
+        "semestre": 4,
+        "correo": "alejandro.perez@uni.edu.co",
+        "programa": "Ciencias de Datos",
+        "fecha_registro": datetime(2026, 1, 1, 10, 0, 0),
+    }
+    repo = EstudianteMySQLRepository(conexion_mock)
+
+    creado = repo.crear(_estudiante_valido(codigo="EST0020"))
+    recuperado = repo.buscar_por_codigo("EST0020")
 
     assert recuperado.codigo == creado.codigo
     assert recuperado.nombre_completo == creado.nombre_completo
     assert recuperado.edad == creado.edad
 
 
-def test_repo_eliminar_codigo_inexistente_lanza_excepcion(repo_json):
-    """Eliminar un código que no existe lanza EntityNotFoundError."""
+def test_repo_eliminar_codigo_inexistente_lanza_excepcion(conexion_mock):
+    """Eliminar un código que no existe lanza EntityNotFoundError (rowcount == 0)."""
+    cursor = conexion_mock.cursor.return_value
+    cursor.rowcount = 0
+    repo = EstudianteMySQLRepository(conexion_mock)
+
     with pytest.raises(EntityNotFoundError):
-        repo_json.eliminar("EST9999")
+        repo.eliminar("EST9999")
 
 
 # ─────────────────────────── Controller (10-11) ──────────────────────────
