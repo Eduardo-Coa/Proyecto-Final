@@ -20,6 +20,12 @@ htmlcov/
 *.swp
 .DS_Store
 
+# Documentación e instrucciones locales de agentes
+AGENTS.md
+CLAUDE.md
+README.md
+.claude/
+
 # Data (decidir si commitearla o no)
 # data/*.json
 
