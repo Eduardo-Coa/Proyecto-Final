@@ -1,190 +1,112 @@
-# Plataforma de Apoyo Psicoeducativo con Analítica
+# Plataforma de Apoyo Psicoeducativo
 
-Sistema de gestión y monitoreo del bienestar emocional enfocado en el entorno universitario, con un **módulo analítico embebido** que aplica ciencia de datos y machine learning sobre los instrumentos validados **PHQ-9** (depresión) y **GAD-7** (ansiedad).
+Aplicación de escritorio en Python para **Bienestar Universitario**. Registra y monitorea
+el estado emocional de estudiantes mediante los instrumentos clínicos validados **PHQ-9**
+(depresión) y **GAD-7** (ansiedad): gestiona la información, aplica reglas clínicas
+automáticas, notifica por correo y analiza los datos con estadística descriptiva.
 
 ## Stack técnico
-
 - **Python 3.10+**
-- **Tkinter** (UI con matplotlib embebido)
-- **JSON** (persistencia de entidades)
+- **Tkinter + ttk** (UI; gráficas embebidas con `FigureCanvasTkAgg`)
 - **pandas + matplotlib** (analítica y visualización)
-- **scikit-learn** (clasificador de riesgo)
+- **MySQL** (persistencia, vía `mysql-connector-python`)
+- **python-dotenv** (credenciales en `.env`)
 - **pytest** (testing)
-- Patrón arquitectónico: **MVC**
-- Patrón GoF: **Decorator** (para EmailService)
+- Arquitectura **MVC** · Patrón GoF: **Decorator** (EmailService)
 
-## Estructura del proyecto
-
-```
-proyecto-psicoeducativo/
-├── .claude/skills/                # 10 skills de Claude Code
-│   ├── project-architecture/
-│   ├── entity-crud/
-│   ├── custom-exceptions/
-│   ├── business-rules/
-│   ├── testing-pytest/
-│   ├── email-decorator/
-│   ├── ui-tkinter-nielsen/
-│   ├── synthetic-data/            # ⭐ Generación de datos
-│   ├── data-analysis/             # ⭐ pandas + matplotlib
-│   └── ml-pipeline/               # ⭐ scikit-learn
-├── src/
-│   ├── models/                    # Entidades CRUD
-│   ├── views/                     # Vistas Tkinter (incluye dashboard analítico)
-│   ├── controllers/
-│   ├── services/                  # Repositorios JSON + EmailService + Decorator
-│   ├── exceptions/                # Excepciones personalizadas
-│   ├── analytics/                 # ⭐ Análisis de datos
-│   │   ├── data_loader.py
-│   │   ├── descriptive_stats.py
-│   │   ├── correlations.py
-│   │   └── visualizations.py
-│   ├── ml/                        # ⭐ Machine Learning
-│   │   ├── features.py
-│   │   ├── train_classifier.py
-│   │   ├── predictor.py
-│   │   ├── evaluation.py
-│   │   └── models/                # Modelos entrenados (.joblib)
-│   └── utils/
-├── scripts/
-│   └── generar_datos_sinteticos.py
-├── data/                          # JSONs (generados localmente)
-├── tests/
-├── docs/                          # BPMN, diagrama de clases, diagrama de estados
-├── main.py
-├── requirements.txt
-└── README.md
+## Rama para revisar el sistema
+El proyecto integrado vive en la rama **`develop`**. Ubícate ahí para ejecutarlo:
+```bash
+git checkout develop
 ```
 
-## Reparto del equipo (4 integrantes)
-
-Cada integrante implementa su **CRUD** + contribuye al **módulo analítico**.
-
-| Integrante | Entidad CRUD | Regla de negocio | Contribución analítica |
-|---|---|---|---|
-| **1** | `Estudiante` | Código único + edad ≥ 16 + semestre 1-12 | Dashboard demográfico: distribución por programa/semestre |
-| **2** | `CuestionarioPHQ9` | Puntaje ≥ 20 → riesgo severo + EmailService | **Modelo ML**: Regresión Logística para clasificar severidad |
-| **3** | `CuestionarioGAD7` | GAD ≥ 15 → severa; comorbilidad con PHQ-9 | **Correlación**: análisis bivariado PHQ-9 vs GAD-7 |
-| **4** | `SesionSeguimiento` | Solo agendar si: tiene cuestionario + no hay otra sesión + hora 8-18 | **Series temporales**: evolución del puntaje del estudiante |
-
-### Entidades auxiliares (sin CRUD propio)
-- `Psicologo` (catálogo precargado)
-- `AlertaRiesgo` (generada automáticamente)
-- `Respuesta` (componente interno de cuestionarios)
-
-## Mapeo de criterios
-
-| # | Criterio | Skill responsable | Quién lo hace |
-|---|---|---|---|
-| 1 | MVC + Clean Code + PEP8 | `project-architecture` | Todos |
-| 2 | CRUD por integrante | `entity-crud` | Cada uno |
-| 3 | Validaciones por dominio | `entity-crud` | Cada uno |
-| 4 | Excepciones personalizadas | `custom-exceptions` | Todos |
-| 5 | Regla de negocio por integrante | `business-rules` | Cada uno |
-| 6 | 10 tests por integrante | `testing-pytest` | Cada uno |
-| 7 | EmailService con Decorator | `email-decorator` | Líder técnico |
-| 8 | Persistencia JSON | `entity-crud` | Cada uno |
-| 9 | UI Tkinter + heurísticas Nielsen | `ui-tkinter-nielsen` | Cada uno |
-| 10 | Clean Code + PEP8 | `project-architecture` | Todos |
-| ⭐ | Datos sintéticos | `synthetic-data` | Integrante 1 lidera |
-| ⭐ | Análisis estadístico | `data-analysis` | Integrantes 1, 3, 4 |
-| ⭐ | Modelo ML | `ml-pipeline` | Integrante 2 lidera |
+## Requisitos previos
+- Python 3.10 o superior
+- Un servidor **MySQL** corriendo localmente
 
 ## Instalación y ejecución
-
 ```bash
-# Clonar
-git clone <url-del-repo>
-cd proyecto-psicoeducativo
+# 1. Clonar y ubicarse en la rama integrada
+git clone https://github.com/Eduardo-Coa/Proyecto-Final.git
+cd Proyecto-Final
+git checkout develop
 
-# Entorno virtual
+# 2. Entorno virtual
 python -m venv .venv
-source .venv/bin/activate           # Linux/Mac
-.venv\Scripts\activate              # Windows
+source .venv/bin/activate        # Linux/Mac
+.venv\Scripts\activate           # Windows
 
-# Dependencias
+# 3. Dependencias
 pip install -r requirements.txt
 
-# 1. Generar datos sintéticos (necesario para que la app tenga datos)
-python scripts/generar_datos_sinteticos.py --n-estudiantes 500
+# 4. Configurar credenciales: copiar la plantilla a .env y completarla
+cp .env.example .env             # Windows: copy .env.example .env
+#    Editar .env con tus credenciales de MySQL
 
-# 2. Entrenar modelo ML (opcional pero recomendado)
-python -m src.ml.train_classifier
+# 5. Crear la base de datos y las tablas
+#    Ejecutar scripts/crear_schema.sql en MySQL Workbench o consola
 
-# 3. Ejecutar la aplicación
+# 6. Generar datos de prueba
+python scripts/generar_datos_sinteticos.py --n-estudiantes 100
+
+# 7. Ejecutar la aplicación
 python main.py
+```
 
-# Correr tests
-pytest -v --tb=short
+> **Nota sobre el `.env`:** el archivo `.env` **no se versiona** porque contiene
+> credenciales. Por eso se incluye `.env.example` como plantilla — cópialo a `.env`
+> y completa tus datos:
+> ```
+> MYSQL_HOST=localhost
+> MYSQL_PORT=3306
+> MYSQL_USER=root
+> MYSQL_PASSWORD=tu_password
+> MYSQL_DATABASE=bienestar_universitario
+> ```
 
-# Cobertura
+## Tests
+```bash
+pytest -v
 pytest --cov=src --cov-report=term-missing
 ```
 
-## Cómo usar los skills de Claude Code
-
-Los 10 skills viven en `.claude/skills/`. Claude Code los carga automáticamente. Ejemplos de prompts:
-
-| Lo que escribes | Skill que se activa |
-|---|---|
-| *"Implementa el CRUD de Estudiante"* | `entity-crud` + `custom-exceptions` |
-| *"Cómo aplico el Decorator al repositorio?"* | `email-decorator` |
-| *"Necesito generar 500 estudiantes con sus PHQ-9"* | `synthetic-data` |
-| *"Crea el dashboard con histograma de puntajes"* | `data-analysis` + `ui-tkinter-nielsen` |
-| *"Entrena el clasificador de riesgo"* | `ml-pipeline` |
-| *"Escribe los 10 tests para el modelo"* | `testing-pytest` + `ml-pipeline` |
-
-Verificar skills cargados: dentro de Claude Code ejecuta `/skills`.
-
-## Flujo de trabajo Git
-
-```bash
-git checkout -b feature/integrante-1-estudiante
-git checkout -b feature/integrante-2-phq9
-git checkout -b feature/integrante-3-gad7
-git checkout -b feature/integrante-4-sesion
-
-git commit -m "feat(estudiante): añade modelo y validaciones"
-git commit -m "feat(estudiante): implementa CRUD con JSON"
-git commit -m "feat(analytics): dashboard demográfico"
+## Estructura del proyecto
+```
+Proyecto-Final/
+├── main.py                     # Punto de entrada (composition root)
+├── requirements.txt
+├── .env.example                # Plantilla de credenciales (copiar a .env)
+├── scripts/
+│   ├── crear_schema.sql        # Crea la BD bienestar_universitario y sus tablas
+│   └── generar_datos_sinteticos.py
+├── src/
+│   ├── models/                 # Entidades del dominio
+│   ├── views/                  # Vistas Tkinter (incluye dashboard analítico)
+│   ├── controllers/            # Controladores MVC + app_controller (Notebook)
+│   ├── repositories/           # Persistencia MySQL + db_config + IRepository
+│   ├── services/               # EmailService + Decorator + reglas de negocio
+│   ├── exceptions/             # Excepciones personalizadas
+│   ├── analytics/              # data_loader, descriptive_stats, correlations, visualizations
+│   └── utils/                  # Constantes de negocio
+├── tests/                      # pytest
+└── docs/                       # Diagramas (BPMN, clases, estados)
 ```
 
-## Diagramas requeridos (criterio habilitante b)
+## Equipo
+| Integrante | Entidad CRUD | Regla de negocio | Contribución analítica |
+|---|---|---|---|
+| Alejandro | `Estudiante` | Código único + edad ≥ 16 + semestre 1-12 | Dashboard demográfico (por programa/semestre) |
+| Eduardo | `CuestionarioPHQ9` | Puntaje ≥ 20 → riesgo severo + EmailService | Estadística descriptiva: severidad PHQ-9 |
+| Diunis | `CuestionarioGAD7` | GAD ≥ 15 → severa; comorbilidad con PHQ-9 reciente | Correlación PHQ-9 ↔ GAD-7 |
+| Ceni | `SesionSeguimiento` | Agendar solo si: tiene cuestionario + sin otra sesión ese día + hora 08–18 | Series temporales: evolución del puntaje |
 
-Carpeta `docs/`:
-- `bpmn_procesos.png` — Mapa de procesos BPMN con las 4 reglas de negocio
-- `diagrama_clases.png` — UML con las 7 clases del dominio
-- `diagrama_estados.png` — Estados de `CuestionarioPHQ9`: NORMAL → LEVE → MODERADO → SEVERO
+Entidades auxiliares (sin CRUD propio): `Psicologo` (catálogo) y `AlertaRiesgo` (generada automáticamente).
 
-## Plan de aprendizaje sugerido (si no saben pandas/sklearn)
-
-**Semana 1**: pandas básico — DataFrames, filtrado, groupby.
-
-**Semana 2**: matplotlib — Figure/Axes, tipos de gráficos. Practicar con los datos sintéticos generados.
-
-**Semana 3**: sklearn — train/test split, Pipeline, LogisticRegression. Hacer el modelo del proyecto.
-
-**Semana 4**: Integración en Tkinter — FigureCanvasTkAgg, refresco de datos.
-
-## Checklist final antes de entregar
-
-### CRUD y arquitectura
-- [ ] Los 4 CRUDs funcionan desde la UI Tkinter
-- [ ] Las 4 reglas de negocio están implementadas Y testeadas
-- [ ] EmailService usa Decorator GoF auténtico
-- [ ] No hay `except Exception` ni `ValueError` genéricos
-- [ ] PEP8 limpio
-
-### Analítica y ML
-- [ ] Script de generación de datos sintéticos funciona
-- [ ] Dashboard analítico muestra al menos 4 visualizaciones diferentes
-- [ ] Modelo ML entrenado, persistido y cargable
-- [ ] Matriz de confusión visible en la UI
-- [ ] Análisis de correlación PHQ-9 ↔ GAD-7 reporta r ≈ 0.6-0.8
-
-### Tests y entrega
-- [ ] `pytest -v` muestra ≥ 40 tests pasando (10 × 4 integrantes)
-- [ ] Cobertura > 70% sobre `src/`
-- [ ] BPMN, diagrama de clases y diagrama de estados en `docs/`
-- [ ] Cada integrante tiene ≥ 3 commits en su rama
-- [ ] README actualizado con nombres reales del equipo
+## Arquitectura
+- **MVC**: modelos (entidades + validaciones), vistas (Tkinter), controladores (orquestan).
+- **Analytics**: capa transversal (no MVC) que consume el dashboard. Las visualizaciones
+  devuelven `Figure` (nunca `plt.show()`) y se embeben con `FigureCanvasTkAgg`.
+- **Decorator GoF**: `NotificacionDecorator` envuelve los repositorios y notifica por correo
+  tras crear/actualizar.
+- **Persistencia**: MySQL; la conexión se obtiene con `obtener_conexion()` de
+  `src/repositories/db_config.py`, leyendo las credenciales del `.env`.
