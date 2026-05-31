@@ -33,3 +33,7 @@ credenciales.json
 AGENTS.md
 CLAUDE.md
 .codex-instructions.md
+
+# Archivos locales que no se versionan
+README.md
+.env.example

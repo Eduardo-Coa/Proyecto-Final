@@ -61,3 +61,25 @@ def cuestionario_normal(respuestas_minimas) -> CuestionarioPHQ9:
         codigo_estudiante="EST002",
         respuestas=respuestas_minimas,
     )
+
+
+# ----------------------------- Fixtures GAD-7 (Diunis) -----------------------------
+
+@pytest.fixture
+def email_mock() -> MagicMock:
+    """Mock del EmailService."""
+    return MagicMock()
+
+
+@pytest.fixture
+def phq9_repo_mock() -> MagicMock:
+    """Mock del PHQ9Repository — por defecto retorna lista vacía."""
+    mock = MagicMock()
+    mock.buscar_por_estudiante.return_value = []
+    return mock
+
+
+@pytest.fixture
+def gad7_repo_mock() -> MagicMock:
+    """Mock del GAD7Repository."""
+    return MagicMock()

@@ -3,16 +3,20 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from src.controllers.gad7_controller import GAD7Controller
 from src.controllers.phq9_controller import PHQ9Controller
 from src.controllers.sesion_controller import SesionController
 from src.repositories.db_config import obtener_conexion
+from src.repositories.gad7_mysql_repository import GAD7MySQLRepository
 from src.repositories.phq9_mysql_repository import PHQ9MySQLRepository
 from src.repositories.sesion_mysql_repository import SesionMySQLRepository
 from src.services.email_service import EmailService
+from src.services.gad7_business_service import GAD7BusinessService
 from src.services.notificacion_decorator import NotificacionDecorator
 from src.services.phq9_business_service import PHQ9BusinessService
 from src.services.sesion_business_service import SesionBusinessService
 from src.views.dashboard_view import DashboardView
+from src.views.gad7_view import GAD7View
 from src.views.phq9_view import PHQ9View
 from src.views.sesion_view import SesionView
 
@@ -62,8 +66,15 @@ class AppController:
             destinatario="bienestar@uni.edu",
             nombre_entidad="Sesion",
         )
+        # Diunis — GAD-7
+        repo_gad7 = GAD7MySQLRepository(self._conexion_db)
+        self._gad7_repo = NotificacionDecorator(
+            repositorio=repo_gad7,
+            email_service=self._email_service,
+            destinatario="bienestar@uni.edu",
+            nombre_entidad="GAD-7",
+        )
         # TODO (Alejandro): self._estudiante_repo = EstudianteRepository()
-        # TODO (Diunis):    self._gad7_repo = GAD7MySQLRepository(...)
 
     def _construir_business_services(self) -> None:
         """Reglas de negocio por integrante."""
@@ -74,7 +85,12 @@ class AppController:
         )
         # Ceni — Sesiones
         self._sesion_business = SesionBusinessService(sesion_repo=self._sesion_repo)
-        # TODO (Diunis): self._gad7_business = GAD7BusinessService(...)
+        # Diunis — GAD-7 (comorbilidad: necesita PHQ-9 reciente del estudiante)
+        self._gad7_business = GAD7BusinessService(
+            phq9_repo=self._phq9_repo,
+            alerta_repo=self._alerta_repo,
+            email_service=self._email_service,
+        )
 
     def _construir_controllers(self) -> None:
         """Un controller específico por entidad."""
@@ -88,8 +104,12 @@ class AppController:
             repositorio=self._sesion_repo,
             business_service=self._sesion_business,
         )
+        # Diunis — GAD-7
+        self._gad7_controller = GAD7Controller(
+            repositorio=self._gad7_repo,
+            business_service=self._gad7_business,
+        )
         # TODO (Alejandro): self._estudiante_controller = EstudianteController(...)
-        # TODO (Diunis):    self._gad7_controller = GAD7Controller(...)
 
     # ─────────────────────────── Menú principal ──────────────────────────
 
@@ -109,8 +129,9 @@ class AppController:
         phq9_view = PHQ9View(notebook, self._phq9_controller)
         notebook.add(phq9_view, text="PHQ-9")
 
-        # TODO (Diunis): GAD7View
-        self._agregar_placeholder(notebook, "GAD-7", "Diunis")
+        # Diunis — GAD-7 (funcional)
+        gad7_view = GAD7View(notebook, self._gad7_controller)
+        notebook.add(gad7_view, text="GAD-7")
 
         # Ceni — Sesiones (funcional)
         sesion_view = SesionView(notebook, self._sesion_controller)

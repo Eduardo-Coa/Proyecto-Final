@@ -6,9 +6,12 @@ from tkinter import ttk
 import pandas as pd
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from src.analytics.data_loader import cargar_phq9, listar_programas
+from src.analytics.data_loader import cargar_gad7, cargar_phq9, listar_programas
 from src.analytics.descriptive_stats import kpis_phq9
-from src.analytics.visualizations import grafica_severidad_phq9
+from src.analytics.visualizations import (
+    grafica_correlacion_phq9_gad7,
+    grafica_severidad_phq9,
+)
 from src.exceptions.persistence_errors import PersistenceError
 
 _TODOS = "Todos los programas"
@@ -28,7 +31,9 @@ class DashboardView(ttk.Frame):
     def __init__(self, parent: tk.Widget) -> None:
         super().__init__(parent)
         self._df_phq9: pd.DataFrame = pd.DataFrame()
+        self._df_gad7: pd.DataFrame = pd.DataFrame()
         self._canvas_phq9: FigureCanvasTkAgg | None = None
+        self._canvas_corr: FigureCanvasTkAgg | None = None
         self._kpi_labels: dict[str, ttk.Label] = {}
         self._construir_ui()
         self._refrescar()
@@ -89,7 +94,13 @@ class DashboardView(ttk.Frame):
         self._frame_phq9.columnconfigure(0, weight=1)
         self._frame_phq9.rowconfigure(0, weight=1)
 
-        self._placeholder(grid, 1, 0, "Correlación PHQ-9 ↔ GAD-7", "Diuniz")
+        self._frame_corr = ttk.LabelFrame(
+            grid, text="Correlación PHQ-9 ↔ GAD-7 — Diuniz", padding=4
+        )
+        self._frame_corr.grid(row=1, column=0, sticky="nsew", padx=4, pady=4)
+        self._frame_corr.columnconfigure(0, weight=1)
+        self._frame_corr.rowconfigure(0, weight=1)
+
         self._placeholder(grid, 1, 1, "Evolución temporal", "Cenaida")
 
     def _placeholder(
@@ -107,6 +118,7 @@ class DashboardView(ttk.Frame):
     def _refrescar(self) -> None:
         try:
             self._df_phq9 = cargar_phq9()
+            self._df_gad7 = cargar_gad7()
             programas = listar_programas()
         except PersistenceError as e:
             self._mostrar_estado(str(e), "red")
@@ -129,6 +141,7 @@ class DashboardView(ttk.Frame):
         self._kpi_labels["mediana"].config(text=str(kpis["mediana"]))
         self._kpi_labels["pct_severo"].config(text=f"{kpis['pct_severo']}%")
         self._dibujar_phq9(df)
+        self._dibujar_correlacion(df, self._filtrar(self._df_gad7))
 
     def _filtrar(self, df: pd.DataFrame) -> pd.DataFrame:
         if df.empty:
@@ -145,6 +158,16 @@ class DashboardView(ttk.Frame):
         self._canvas_phq9 = FigureCanvasTkAgg(figura, master=self._frame_phq9)
         self._canvas_phq9.draw()
         self._canvas_phq9.get_tk_widget().grid(row=0, column=0, sticky="nsew")
+
+    def _dibujar_correlacion(
+        self, df_phq9: pd.DataFrame, df_gad7: pd.DataFrame
+    ) -> None:
+        if self._canvas_corr is not None:
+            self._canvas_corr.get_tk_widget().destroy()
+        figura = grafica_correlacion_phq9_gad7(df_phq9, df_gad7)
+        self._canvas_corr = FigureCanvasTkAgg(figura, master=self._frame_corr)
+        self._canvas_corr.draw()
+        self._canvas_corr.get_tk_widget().grid(row=0, column=0, sticky="nsew")
 
     def _mostrar_estado(self, mensaje: str, color: str) -> None:
         self._lbl_estado.config(text=mensaje, foreground=color)
