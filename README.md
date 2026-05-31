@@ -98,7 +98,7 @@ Proyecto-Final/
 | Alejandro | `Estudiante` | Código único + edad ≥ 16 + semestre 1-12 | Dashboard demográfico (por programa/semestre) |
 | Eduardo | `CuestionarioPHQ9` | Puntaje ≥ 20 → riesgo severo + EmailService | Estadística descriptiva: severidad PHQ-9 |
 | Diunis | `CuestionarioGAD7` | GAD ≥ 15 → severa; comorbilidad con PHQ-9 reciente | Correlación PHQ-9 ↔ GAD-7 |
-| Ceni | `SesionSeguimiento` | Agendar solo si: tiene cuestionario + sin otra sesión ese día + hora 08–18 | Series temporales: evolución del puntaje |
+| Cenaida | `SesionSeguimiento` | Agendar solo si: tiene cuestionario + sin otra sesión ese día + hora 08–18 | Series temporales: evolución del puntaje |
 
 Entidades auxiliares (sin CRUD propio): `Psicologo` (catálogo) y `AlertaRiesgo` (generada automáticamente).
 
