@@ -26,6 +26,7 @@ class PHQ9View(ttk.Frame):
         super().__init__(parent)
         self._controller = controller
         self._id_seleccionado: str | None = None
+        self._cuestionarios_por_id: dict[str, CuestionarioPHQ9] = {}
         self._vars_respuestas: list[tk.StringVar] = [
             tk.StringVar(value=OPCIONES_RESPUESTA[0]) for _ in range(NUM_ITEMS_PHQ9)
         ]
@@ -145,17 +146,17 @@ class PHQ9View(ttk.Frame):
         seleccion = self._tabla.selection()
         if not seleccion:
             return
-        id_completo = seleccion[0]
-        self._id_seleccionado = id_completo
-        exito, resultado = self._controller.buscar(id_completo)
-        if not exito or not isinstance(resultado, CuestionarioPHQ9):
-            self._mostrar_estado(str(resultado), "red")
+        self._id_seleccionado = seleccion[0]
+        cuestionario = self._cuestionarios_por_id.get(self._id_seleccionado)
+        if cuestionario is None:
             return
         self._ent_codigo.delete(0, tk.END)
-        self._ent_codigo.insert(0, resultado.codigo_estudiante)
-        for i, valor in enumerate(resultado.respuestas):
+        self._ent_codigo.insert(0, cuestionario.codigo_estudiante)
+        for i, valor in enumerate(cuestionario.respuestas):
             self._vars_respuestas[i].set(OPCIONES_RESPUESTA[valor])
-        self._mostrar_estado(f"Cuestionario {id_completo[:8]}... cargado para edición.", "gray")
+        self._mostrar_estado(
+            f"Cuestionario {self._id_seleccionado[:8]}... cargado para edición.", "gray"
+        )
 
     # ------------------------------------------------------------------ Acciones CRUD
 
@@ -217,12 +218,14 @@ class PHQ9View(ttk.Frame):
     def _cargar_tabla(self) -> None:
         for fila in self._tabla.get_children():
             self._tabla.delete(fila)
+        self._cuestionarios_por_id.clear()
         exito, resultado = self._controller.listar()
         if not exito:
             self._mostrar_estado(str(resultado), "red")
             return
         assert isinstance(resultado, list)
         for c in resultado:
+            self._cuestionarios_por_id[c.id] = c
             self._tabla.insert("", "end", iid=c.id, values=(
                 c.id[:8] + "...",
                 c.codigo_estudiante,
