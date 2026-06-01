@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from src.exceptions.validation_errors import PuntajeInvalidoError, FechaInvalidaError
 from src.utils.constantes_negocio import (
@@ -42,7 +42,10 @@ class CuestionarioGAD7:
         self.nivel_severidad = self._clasificar_severidad()
 
     def _validar_fecha(self) -> None:
-        if self.fecha_aplicacion > datetime.now():
+        # Tolerancia de 60s: absorbe el redondeo de MySQL DATETIME (sin fracciones
+        # de segundo) y pequeños desfases de reloj, sin permitir fechas futuras reales.
+        margen = datetime.now() + timedelta(seconds=60)
+        if self.fecha_aplicacion > margen:
             raise FechaInvalidaError("La fecha de aplicación no puede ser futura.")
 
     def _validar_respuestas(self) -> None:
