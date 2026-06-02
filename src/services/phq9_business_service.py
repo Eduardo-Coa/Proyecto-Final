@@ -14,11 +14,14 @@ class PHQ9BusinessService:
     Args:
         alerta_repo: repositorio de alertas de riesgo.
         email_service: servicio de notificaciones por correo.
+        destinatario: correo del equipo de bienestar que recibe las alertas.
     """
 
-    def __init__(self, alerta_repo, email_service) -> None:
+    def __init__(self, alerta_repo, email_service,
+                 destinatario: str = "bienestar@uni.edu") -> None:
         self._alerta_repo = alerta_repo
         self._email_service = email_service
+        self._destinatario = destinatario
 
     def evaluar_riesgo(self, cuestionario: CuestionarioPHQ9) -> str:
         """Evalúa el riesgo del cuestionario PHQ-9 y aplica la regla de negocio.
@@ -51,4 +54,4 @@ class PHQ9BusinessService:
             f"{cuestionario.puntaje_total} ({cuestionario.nivel_severidad}).\n"
             f"Alerta ID: {alerta.id}\nFecha: {alerta.fecha.strftime('%Y-%m-%d %H:%M')}"
         )
-        self._email_service.enviar("bienestar@uni.edu", asunto, cuerpo)
+        self._email_service.enviar(self._destinatario, asunto, cuerpo)

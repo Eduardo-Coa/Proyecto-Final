@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import smtplib
 from email.message import EmailMessage
 
@@ -75,3 +76,26 @@ class EmailService:
                 servidor.send_message(mensaje)
         except (smtplib.SMTPException, OSError) as e:
             raise EmailEnvioError(f"No se pudo enviar el correo a '{destinatario}': {e}.")
+
+    @classmethod
+    def desde_env(cls) -> EmailService:
+        """Crea un EmailService leyendo la configuración del entorno (.env).
+
+        Si existen EMAIL_USUARIO y EMAIL_PASSWORD, activa el envío SMTP real;
+        en caso contrario, cae en modo simulación (imprime en consola). Así el
+        equipo y la evaluación pueden ejecutar la app sin credenciales.
+
+        Returns:
+            Instancia configurada de EmailService.
+        """
+        usuario = os.environ.get("EMAIL_USUARIO", "").strip()
+        password = os.environ.get("EMAIL_PASSWORD", "").strip()
+        modo_real = bool(usuario and password)
+        return cls(
+            modo_simulacion=not modo_real,
+            host=os.environ.get("EMAIL_HOST", "smtp.gmail.com"),
+            puerto=int(os.environ.get("EMAIL_PUERTO", "587")),
+            usuario=usuario,
+            password=password,
+            remitente=os.environ.get("EMAIL_REMITENTE", usuario or "bienestar@uni.edu"),
+        )
