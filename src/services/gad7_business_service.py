@@ -19,12 +19,15 @@ class GAD7BusinessService:
         phq9_repo: repositorio de cuestionarios PHQ-9 (para verificar comorbilidad).
         alerta_repo: repositorio de alertas de riesgo.
         email_service: servicio de notificaciones por correo.
+        destinatario: correo del equipo de bienestar que recibe las alertas.
     """
 
-    def __init__(self, phq9_repo, alerta_repo, email_service) -> None:
+    def __init__(self, phq9_repo, alerta_repo, email_service,
+                 destinatario: str = "bienestar@uni.edu") -> None:
         self._phq9_repo = phq9_repo
         self._alerta_repo = alerta_repo
         self._email_service = email_service
+        self._destinatario = destinatario
 
     def evaluar_riesgo(self, cuestionario: CuestionarioGAD7) -> str:
         """Evalúa el riesgo del cuestionario GAD-7 y aplica las reglas de negocio.
@@ -88,7 +91,7 @@ class GAD7BusinessService:
             f"{DIAS_VENTANA_COMORBILIDAD} días.\n"
             f"Alerta ID: {alerta.id}\nFecha: {alerta.fecha.strftime('%Y-%m-%d %H:%M')}"
         )
-        self._email_service.enviar("bienestar@uni.edu", asunto, cuerpo)
+        self._email_service.enviar(self._destinatario, asunto, cuerpo)
 
     def _notificar_ansiedad_severa(self, cuestionario: CuestionarioGAD7,
                                    alerta: AlertaRiesgo) -> None:
@@ -98,4 +101,4 @@ class GAD7BusinessService:
             f"{cuestionario.puntaje_total} (Severo).\n"
             f"Alerta ID: {alerta.id}\nFecha: {alerta.fecha.strftime('%Y-%m-%d %H:%M')}"
         )
-        self._email_service.enviar("bienestar@uni.edu", asunto, cuerpo)
+        self._email_service.enviar(self._destinatario, asunto, cuerpo)

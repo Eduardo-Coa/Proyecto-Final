@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import tkinter as tk
 from tkinter import ttk
 
@@ -46,10 +47,12 @@ class AppController:
     # ─────────────────────────── Capas ───────────────────────────────────
 
     def _construir_servicios_compartidos(self) -> None:
-        """EmailService (modo simulación), AlertaRepository stub y conexión MySQL."""
-        self._email_service = EmailService(modo_simulacion=True)
-        self._alerta_repo = _AlertaRepoStub()
+        """EmailService (real o simulación según .env), AlertaRepository stub y MySQL."""
+        # La conexión carga primero el .env, dejando disponibles las variables EMAIL_*.
         self._conexion_db = obtener_conexion()
+        self._email_service = EmailService.desde_env()
+        self._destinatario = os.environ.get("EMAIL_DESTINATARIO", "bienestar@uni.edu")
+        self._alerta_repo = _AlertaRepoStub()
 
     def _construir_repositorios(self) -> None:
         """Repositorios MySQL envueltos en NotificacionDecorator (patrón GoF)."""
@@ -58,7 +61,7 @@ class AppController:
         self._estudiante_repo = NotificacionDecorator(
             repositorio=repo_estudiante,
             email_service=self._email_service,
-            destinatario="bienestar@uni.edu",
+            destinatario=self._destinatario,
             nombre_entidad="Estudiante",
         )
 
@@ -67,7 +70,7 @@ class AppController:
         self._phq9_repo = NotificacionDecorator(
             repositorio=repo_phq9,
             email_service=self._email_service,
-            destinatario="bienestar@uni.edu",
+            destinatario=self._destinatario,
             nombre_entidad="PHQ-9",
         )
 
@@ -76,7 +79,7 @@ class AppController:
         self._sesion_repo = NotificacionDecorator(
             repositorio=repo_sesion,
             email_service=self._email_service,
-            destinatario="bienestar@uni.edu",
+            destinatario=self._destinatario,
             nombre_entidad="Sesion",
         )
 
@@ -85,7 +88,7 @@ class AppController:
         self._gad7_repo = NotificacionDecorator(
             repositorio=repo_gad7,
             email_service=self._email_service,
-            destinatario="bienestar@uni.edu",
+            destinatario=self._destinatario,
             nombre_entidad="GAD-7",
         )
 
@@ -95,6 +98,7 @@ class AppController:
         self._phq9_business = PHQ9BusinessService(
             alerta_repo=self._alerta_repo,
             email_service=self._email_service,
+            destinatario=self._destinatario,
         )
 
         # Ceni — Sesiones
@@ -105,6 +109,7 @@ class AppController:
             phq9_repo=self._phq9_repo,
             alerta_repo=self._alerta_repo,
             email_service=self._email_service,
+            destinatario=self._destinatario,
         )
 
     def _construir_controllers(self) -> None:
